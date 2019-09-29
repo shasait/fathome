@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.project;
+package de.hasait.fathome;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -22,7 +22,7 @@ import java.util.Set;
 /**
  *
  */
-public class FahDevice extends AbstractFahProjectPart {
+public class FahDevice extends AbstractFahPart {
 
 	private final String serialNumber;
 

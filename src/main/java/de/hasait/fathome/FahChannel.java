@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.project;
+package de.hasait.fathome;
 
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rocks.xmpp.extensions.rpc.model.Value;
+
 /**
  *
  */
-public class FahChannel extends AbstractFahProjectPart {
+public class FahChannel extends AbstractFahPart {
+
+	private static final Logger log = LoggerFactory.getLogger(FahChannel.class);
 
 	private final FahDevice device;
 	private final String i;
@@ -40,6 +46,30 @@ public class FahChannel extends AbstractFahProjectPart {
 		this.i = i;
 
 		device.addChannel(this);
+	}
+
+	public boolean canDim() {
+		String fidName = function.getFidName();
+		return "FID_DimmingActuator".equals(fidName);
+	}
+
+	public boolean canSwitch() {
+		String fidName = function.getFidName();
+		return "FID_SwitchingActuator".equals(fidName) || "FID_DimmingActuator".equals(fidName);
+	}
+
+	public void dimActuator(int state) {
+		if (state < 0 || state > 100) {
+			throw new IllegalArgumentException("state not in range [0, 100]: " + state);
+		}
+		if (!canDim()) {
+			throw new IllegalArgumentException("Dim not supported: " + name + " (" + function.getFidName() + ")");
+		}
+
+		Value dpPath = Value.of(device.getSerialNumber() + "/" + i + "/" + "idp002");
+		Value dpValue = Value.of(Integer.toString(state));
+		Value result = getFreeAtHome().rpcCall("RemoteInterface.setDatapoint", dpPath, dpValue);
+		log.info("result: " + result);
 	}
 
 	public FahDevice getDevice() {
@@ -63,7 +93,14 @@ public class FahChannel extends AbstractFahProjectPart {
 	}
 
 	public void switchActuator(boolean state) {
-		getProject().getFreeAtHome().switchActuator(this, state);
+		if (!canSwitch()) {
+			throw new IllegalArgumentException("Switch not supported: " + name + " (" + function.getFidName() + ")");
+		}
+		Value dpPath = Value.of(device.getSerialNumber() + "/" + i + "/" + "idp000");
+		Value dpValue = Value.of(state ? "1" : "0");
+
+		Value result = getFreeAtHome().rpcCall("RemoteInterface.setDatapoint", dpPath, dpValue);
+		log.info("result: " + result);
 	}
 
 	void addInputDataPoint(String idp) {

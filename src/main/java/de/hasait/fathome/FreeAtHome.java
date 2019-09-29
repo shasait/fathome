@@ -17,7 +17,11 @@
 package de.hasait.fathome;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.http.client.utils.HttpClientUtils;
@@ -35,9 +39,6 @@ import rocks.xmpp.extensions.rpc.RpcManager;
 import rocks.xmpp.extensions.rpc.model.Value;
 import rocks.xmpp.util.concurrent.AsyncResult;
 
-import de.hasait.fathome.project.FahChannel;
-import de.hasait.fathome.project.FahProject;
-import de.hasait.fathome.project.FahProjectParser;
 import de.hasait.fathome.util.http.AsStringContentHandler;
 import de.hasait.fathome.util.http.HttpUtil;
 
@@ -48,10 +49,19 @@ public class FreeAtHome {
 
 	private static final Logger log = LoggerFactory.getLogger(FreeAtHome.class);
 
+	private final Set<AbstractFahPart> parts = new HashSet<>();
+	private final Map<String, String> sysap = new TreeMap<>();
+	private final Map<String, String> config = new TreeMap<>();
+	private final Map<Integer, FahString> stringByNameId = new TreeMap<>();
+	private final Map<Integer, FahFunction> functionByFunctionId = new TreeMap<>();
+	private final Map<String, FahFloor> floorByUid = new TreeMap<>();
+	private final Map<String, FahFloor> floorByName = new TreeMap<>();
+	private final Map<String, FahRoom> roomByUid = new TreeMap<>();
+	private final Map<String, FahDevice> deviceBySerialNumber = new TreeMap<>();
+	private final Map<String, FahChannel> channelByName = new TreeMap<>();
+
 	private XmppClient xmppClient;
 	private Jid rpcJid;
-
-	private FahProject project;
 
 	public void connect(FreeAtHomeConfiguration configuration) {
 		try {
@@ -100,44 +110,99 @@ public class FreeAtHome {
 			xmppClient = XmppClient.create(xmppDomain, connectionConfiguration);
 			xmppClient.connect();
 			xmppClient.login(xmppUsername, fahPassword);
-			fahGetAll();
+
+			loadAll();
 		} catch (XmppException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	public FahProject getProject() {
-		return project;
+	public Collection<FahChannel> getAllChannels() {
+		return Collections.unmodifiableCollection(channelByName.values());
 	}
 
-	public void switchActuator(FahChannel channel, boolean state) {
-		try {
-			String fidName = channel.getFunction().getFidName();
-			if (!"FID_SwitchingActuator".equals(fidName)) {
-				throw new IllegalArgumentException("Invalid FID: " + fidName);
+	public Collection<FahFloor> getAllFloors() {
+		return Collections.unmodifiableCollection(floorByUid.values());
+	}
+
+	public FahChannel getChannel(String name) {
+		return channelByName.get(name);
+	}
+
+	public FahFloor getFloorByName(String name) {
+		return floorByName.get(name);
+	}
+
+	public FahFunction getFunctionByFunctionId(int functionId) {
+		return functionByFunctionId.get(functionId);
+	}
+
+	public FahRoom getRoomByUid(String uid) {
+		return roomByUid.get(uid);
+	}
+
+	public FahString getStringByNameId(int nameId) {
+		return stringByNameId.get(nameId);
+	}
+
+	void addConfig(String name, String value) {
+		config.put(name, value);
+	}
+
+	void addPart(AbstractFahPart part) {
+		if (parts.contains(part)) {
+			return;
+		}
+		part.setFreeAtHome(this);
+
+		if (part instanceof FahString) {
+			FahString fah = (FahString) part;
+			stringByNameId.put(fah.getId(), fah);
+		}
+		if (part instanceof FahFunction) {
+			FahFunction fah = (FahFunction) part;
+			functionByFunctionId.put(fah.getFunctionId(), fah);
+		}
+		if (part instanceof FahFloor) {
+			FahFloor fah = (FahFloor) part;
+			floorByUid.put(fah.getUid(), fah);
+			String name = fah.getName();
+			if (name != null) {
+				floorByName.put(name, fah);
 			}
-			String dpPath = channel.getDevice().getSerialNumber() + "/" + channel.getI() + "/" + channel.getIdps().iterator().next();
-			String dpValue = state ? "1" : "0";
-
-			RpcManager rpcManager = xmppClient.getManager(RpcManager.class);
-			AsyncResult<Value> asyncResult = rpcManager.call(rpcJid, "RemoteInterface.setDatapoint", Value.of(dpPath), Value.of(dpValue));
-			Value result = asyncResult.getResult();
-			log.info("result: " + result);
-		} catch (XmppException e) {
-			throw new RuntimeException(e);
+		}
+		if (part instanceof FahRoom) {
+			FahRoom fah = (FahRoom) part;
+			roomByUid.put(fah.getUid(), fah);
+		}
+		if (part instanceof FahDevice) {
+			FahDevice fah = (FahDevice) part;
+			deviceBySerialNumber.put(fah.getSerialNumber(), fah);
+		}
+		if (part instanceof FahChannel) {
+			FahChannel fah = (FahChannel) part;
+			String name = fah.getName();
+			if (name != null) {
+				channelByName.put(name, fah);
+			}
 		}
 	}
 
-	private void fahGetAll() {
+	void addSysap(String name, String value) {
+		sysap.put(name, value);
+	}
+
+	void loadAll() {
+		Value result = rpcCall("RemoteInterface.getAll", Value.of("de"), Value.of("4"), Value.of("0"), Value.of("0"));
+		String projectXml = result.getAsString();
+		FahProjectParser.parse(projectXml, this);
+	}
+
+	Value rpcCall(String methodName, Value... parameters) {
 		try {
 			RpcManager rpcManager = xmppClient.getManager(RpcManager.class);
-			AsyncResult<Value> asyncResult = rpcManager
-					.call(rpcJid, "RemoteInterface.getAll", Value.of("de"), Value.of("4"), Value.of("0"), Value.of("0"));
-			Value result = asyncResult.getResult();
-			String projectXml = result.getAsString();
-			FahProject project = new FahProject(this);
-			FahProjectParser.parse(projectXml, project);
-			this.project = project;
+			AsyncResult<Value> asyncResult = rpcManager.call(rpcJid, methodName, parameters);
+			return asyncResult.getResult();
 		} catch (XmppException e) {
 			throw new RuntimeException(e);
 		}

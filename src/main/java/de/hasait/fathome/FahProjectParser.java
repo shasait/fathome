@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.project;
+package de.hasait.fathome;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -28,9 +28,9 @@ import de.hasait.fathome.util.xpp.XppWalker;
 /**
  *
  */
-public class FahProjectParser {
+class FahProjectParser {
 
-	public static void parse(String xml, FahProject fahProject) {
+	static void parse(String xml, FreeAtHome freeAtHome) {
 		XppWalker walker = //
 				new XppWalker( //
 				).putTag("project", //
@@ -41,7 +41,7 @@ public class FahProjectParser {
 										   valueParser -> {
 											   String name = valueParser.getAttributeValue(null, "name");
 											   String value = valueParser.nextText();
-											   fahProject.addSysap(name, value);
+											   freeAtHome.addSysap(name, value);
 										   }
 								  )
 						 ).putTag("config", //
@@ -50,7 +50,7 @@ public class FahProjectParser {
 										   varParser -> {
 											   String name = varParser.getAttributeValue(null, "name");
 											   String value = varParser.nextText();
-											   fahProject.addConfig(name, value);
+											   freeAtHome.addConfig(name, value);
 										   }
 								  )
 						 ).putTag("strings", //
@@ -61,7 +61,7 @@ public class FahProjectParser {
 											   String value = stringParser.nextText();
 											   FahString fahString = new FahString(nameId);
 											   fahString.setValue(value);
-											   fahProject.addPart(fahString);
+											   freeAtHome.addPart(fahString);
 										   }
 								  )
 						 ).putTag("definitions", //
@@ -73,10 +73,10 @@ public class FahProjectParser {
 														int nameId = parseId(functionParser.getAttributeValue(null, "nameId"));
 														int functionId = parseId(functionParser.getAttributeValue(null, "functionId"));
 														String name = functionParser.getAttributeValue(null, "name");
-														FahFunction fahFunction = new FahFunction(fahProject, functionId);
+														FahFunction fahFunction = new FahFunction(functionId);
 														fahFunction.setFidName(name);
-														fahFunction.setName(fahProject.getStringByNameId(nameId));
-														fahProject.addPart(fahFunction);
+														fahFunction.setName(freeAtHome.getStringByNameId(nameId));
+														freeAtHome.addPart(fahFunction);
 													}
 										   )
 								  )
@@ -90,7 +90,7 @@ public class FahProjectParser {
 											   FahFloor fahFloor = new FahFloor(floorUid);
 											   fahFloor.setLevel(floorLevel);
 											   fahFloor.setName(floorName);
-											   fahProject.addPart(fahFloor);
+											   freeAtHome.addPart(fahFloor);
 
 											   new XppWalker( //
 											   ).putTag("room", //
@@ -99,7 +99,7 @@ public class FahProjectParser {
 															String roomName = roomParser.getAttributeValue(null, "name");
 															FahRoom fahRoom = new FahRoom(fahFloor, roomUid);
 															fahRoom.setName(roomName);
-															fahProject.addPart(fahRoom);
+															freeAtHome.addPart(fahRoom);
 														}
 											   ).parse(floorParser);
 										   }
@@ -111,7 +111,7 @@ public class FahProjectParser {
 											   String deviceSerialNumber = deviceParser.getAttributeValue(null, "serialNumber");
 											   int deviceNameId = parseId(deviceParser.getAttributeValue(null, "nameId"));
 											   FahDevice fahDevice = new FahDevice(deviceSerialNumber);
-											   fahDevice.setType(fahProject.getStringByNameId(deviceNameId));
+											   fahDevice.setType(freeAtHome.getStringByNameId(deviceNameId));
 
 											   new XppWalker( //
 											   ).putTag("attribute", //
@@ -122,7 +122,7 @@ public class FahProjectParser {
 																fahDevice.setName(value);
 															}
 															if ("room".equals(name)) {
-																fahDevice.setRoom(fahProject.getRoomByUid(value));
+																fahDevice.setRoom(freeAtHome.getRoomByUid(value));
 															}
 														}
 											   ).putTag("channels", //
@@ -143,7 +143,7 @@ public class FahProjectParser {
 																				  }
 																				  if ("functionId".equals(name)) {
 																					  int functionId = Integer.parseInt(value, 16);
-																					  fahChannel.setFunction(fahProject
+																					  fahChannel.setFunction(freeAtHome
 																													 .getFunctionByFunctionId(
 																															 functionId));
 																				  }
@@ -166,12 +166,12 @@ public class FahProjectParser {
 																		 }
 																	 }
 
-																	 fahProject.addPart(fahChannel);
+																	 freeAtHome.addPart(fahChannel);
 																 }
 														)
 											   ).parse(deviceParser);
 
-											   fahProject.addPart(fahDevice);
+											   freeAtHome.addPart(fahDevice);
 										   }
 								  )
 						 )

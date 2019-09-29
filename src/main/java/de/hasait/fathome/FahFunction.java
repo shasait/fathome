@@ -14,29 +14,42 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.project;
+package de.hasait.fathome;
 
 /**
  *
  */
-public abstract class AbstractFahProjectPart {
+public class FahFunction extends AbstractFahPart {
 
-	private FahProject project;
+	private final int functionId;
 
-	AbstractFahProjectPart() {
+	private FahString name;
+	private String fidName;
+
+	FahFunction(int functionId) {
 		super();
+
+		this.functionId = functionId;
 	}
 
-	public FahProject getProject() {
-		return project;
+	public String getFidName() {
+		return fidName;
 	}
 
-	void setProject(FahProject newProject) {
-		if (project == newProject) {
-			return;
-		}
-		this.project = newProject;
-		project.addPart(this);
+	public int getFunctionId() {
+		return functionId;
+	}
+
+	public FahString getName() {
+		return name;
+	}
+
+	void setFidName(String fidName) {
+		this.fidName = fidName;
+	}
+
+	void setName(FahString name) {
+		this.name = name;
 	}
 
 }

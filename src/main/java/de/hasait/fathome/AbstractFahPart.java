@@ -14,32 +14,29 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.project;
+package de.hasait.fathome;
 
 /**
  *
  */
-public class FahString extends AbstractFahProjectPart {
+public abstract class AbstractFahPart {
 
-	private final int id;
-	private String value;
+	private FreeAtHome freeAtHome;
 
-	FahString(int id) {
+	AbstractFahPart() {
 		super();
-
-		this.id = id;
 	}
 
-	public int getId() {
-		return id;
+	public FreeAtHome getFreeAtHome() {
+		return freeAtHome;
 	}
 
-	public String getValue() {
-		return value;
-	}
-
-	void setValue(String value) {
-		this.value = value;
+	void setFreeAtHome(FreeAtHome newFreeAtHome) {
+		if (freeAtHome == newFreeAtHome) {
+			return;
+		}
+		this.freeAtHome = newFreeAtHome;
+		freeAtHome.addPart(this);
 	}
 
 }

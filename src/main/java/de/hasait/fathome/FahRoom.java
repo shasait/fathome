@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.project;
+package de.hasait.fathome;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,47 +23,50 @@ import java.util.Set;
 /**
  *
  */
-public class FahFloor extends AbstractFahProjectPart {
+public class FahRoom extends AbstractFahPart {
 
+	private final FahFloor floor;
 	private final String uid;
 
-	private final Set<FahRoom> rooms = new HashSet<>();
+	private final Set<FahDevice> devices = new HashSet<>();
 
 	private String name;
 
-	private int level;
-
-	public FahFloor(String uid) {
+	FahRoom(FahFloor floor, String uid) {
 		super();
 
+		this.floor = floor;
 		this.uid = uid;
+
+		floor.addRoom(this);
 	}
 
-	public int getLevel() {
-		return level;
+	public Set<FahDevice> getDevices() {
+		return Collections.unmodifiableSet(devices);
+	}
+
+	public FahFloor getFloor() {
+		return floor;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public Set<FahRoom> getRooms() {
-		return Collections.unmodifiableSet(rooms);
-	}
-
 	public String getUid() {
 		return uid;
 	}
 
-	public void setLevel(int level) {
-		this.level = level;
+	void addDevice(FahDevice device) {
+		devices.add(device);
 	}
 
-	public void setName(String name) {
+	void removeDevice(FahDevice device) {
+		devices.remove(device);
+	}
+
+	void setName(String name) {
 		this.name = name;
 	}
 
-	void addRoom(FahRoom room) {
-		rooms.add(room);
-	}
 }
