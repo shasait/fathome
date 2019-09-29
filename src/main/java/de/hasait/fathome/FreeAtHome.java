@@ -31,10 +31,19 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Element;
 import rocks.xmpp.addr.Jid;
 import rocks.xmpp.core.XmppException;
 import rocks.xmpp.core.net.client.SocketConnectionConfiguration;
+import rocks.xmpp.core.session.Extension;
 import rocks.xmpp.core.session.XmppClient;
+import rocks.xmpp.core.session.XmppSessionConfiguration;
+import rocks.xmpp.core.stanza.MessageEvent;
+import rocks.xmpp.core.stanza.model.Message;
+import rocks.xmpp.core.stanza.model.Presence;
+import rocks.xmpp.core.stanza.model.client.ClientMessage;
+import rocks.xmpp.extensions.pubsub.model.Item;
+import rocks.xmpp.extensions.pubsub.model.event.Event;
 import rocks.xmpp.extensions.rpc.RpcManager;
 import rocks.xmpp.extensions.rpc.model.Value;
 import rocks.xmpp.util.concurrent.AsyncResult;
@@ -61,6 +70,7 @@ public class FreeAtHome {
 	private final Map<String, FahChannel> channelByName = new TreeMap<>();
 
 	private XmppClient xmppClient;
+	private String updateNamespace;
 	private Jid rpcJid;
 
 	public void connect(FreeAtHomeConfiguration configuration) {
@@ -70,6 +80,7 @@ public class FreeAtHome {
 			String fahSysApHostname = configuration.getHostOrIp();
 
 			String xmppDomain = "busch-jaeger.de";
+			updateNamespace = "http://abb.com/protocol/update";
 			rpcJid = Jid.of("mrha@" + xmppDomain + "/rpc");
 
 			CloseableHttpClient httpClient = HttpClients.createDefault();
@@ -102,14 +113,27 @@ public class FreeAtHome {
 			String xmppUsername = userJid.getLocal();
 			log.info("Login using " + xmppUsername + "...");
 
-			SocketConnectionConfiguration connectionConfiguration = SocketConnectionConfiguration.builder() //
-																								 .hostname(fahSysApHostname) //
-																								 .port(5222) //
-																								 .build();
+			SocketConnectionConfiguration connectionConfiguration = //
+					SocketConnectionConfiguration.builder() //
+												 .hostname(fahSysApHostname) //
+												 .port(5222) //
+												 .build();
 
-			xmppClient = XmppClient.create(xmppDomain, connectionConfiguration);
+			XmppSessionConfiguration sessionConfiguration = //
+					XmppSessionConfiguration.builder() //
+											.extensions(Extension.of(updateNamespace, null, true, true),
+														Extension.of(updateNamespace, null, true)
+											).build();
+
+			xmppClient = XmppClient.create(xmppDomain, sessionConfiguration, connectionConfiguration);
 			xmppClient.connect();
 			xmppClient.login(xmppUsername, fahPassword);
+
+			xmppClient.addInboundMessageListener(this::handleInboundMessage);
+
+			Presence presence = new Presence(rpcJid, Presence.Type.SUBSCRIBE, null, null, null, null, userJid, null, null, null);
+			xmppClient.send(presence);
+			xmppClient.send(new Presence());
 
 			loadAll();
 		} catch (XmppException e) {
@@ -129,6 +153,10 @@ public class FreeAtHome {
 		return channelByName.get(name);
 	}
 
+	public FahDevice getDeviceBySerialNumber(String serialNumber) {
+		return deviceBySerialNumber.get(serialNumber);
+	}
+
 	public FahFloor getFloorByName(String name) {
 		return floorByName.get(name);
 	}
@@ -143,10 +171,6 @@ public class FreeAtHome {
 
 	public FahString getStringByNameId(int nameId) {
 		return stringByNameId.get(nameId);
-	}
-
-	void addConfig(String name, String value) {
-		config.put(name, value);
 	}
 
 	void addPart(AbstractFahPart part) {
@@ -188,14 +212,10 @@ public class FreeAtHome {
 		}
 	}
 
-	void addSysap(String name, String value) {
-		sysap.put(name, value);
-	}
-
 	void loadAll() {
 		Value result = rpcCall("RemoteInterface.getAll", Value.of("de"), Value.of("4"), Value.of("0"), Value.of("0"));
 		String projectXml = result.getAsString();
-		FahProjectParser.parse(projectXml, this);
+		FahXmlParser.parseProjectXml(projectXml, this);
 	}
 
 	Value rpcCall(String methodName, Value... parameters) {
@@ -205,6 +225,42 @@ public class FreeAtHome {
 			return asyncResult.getResult();
 		} catch (XmppException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	void setFahConfigValue(String name, String value) {
+		config.put(name, value);
+	}
+
+	void setFahSysapValue(String name, String value) {
+		sysap.put(name, value);
+	}
+
+	private void handleInboundMessage(MessageEvent messageEvent) {
+		Message message = messageEvent.getMessage();
+		try {
+			if (message instanceof ClientMessage) {
+				ClientMessage clientMessage = (ClientMessage) message;
+				Event event = clientMessage.getExtension(Event.class);
+				if (event != null && updateNamespace.equals(event.getNode())) {
+					for (Item item : event.getItems()) {
+						Object payload = item.getPayload();
+						if (payload instanceof Element) {
+							Element updateElement = (Element) payload;
+							if ("update".equals(updateElement.getTagName())) {
+								String updateXml = updateElement.getElementsByTagName("data").item(0).getTextContent();
+								log.info("updateXml: " + updateXml);
+								FahXmlParser.parseUpdateXml(updateXml, this);
+								messageEvent.consume();
+							}
+						}
+					}
+				}
+			} else {
+				log.info("message: " + message);
+			}
+		} catch (RuntimeException e) {
+			log.warn("Could not process message", e);
 		}
 	}
 

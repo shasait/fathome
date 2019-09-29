@@ -16,8 +16,8 @@
 
 package de.hasait.fathome;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  *
@@ -26,7 +26,7 @@ public class FahDevice extends AbstractFahPart {
 
 	private final String serialNumber;
 
-	private final Set<FahChannel> channels = new HashSet<>();
+	private final Map<String, FahChannel> channelsByI = new TreeMap<>();
 
 	private FahString type;
 	private String name;
@@ -36,6 +36,10 @@ public class FahDevice extends AbstractFahPart {
 		super();
 
 		this.serialNumber = serialNumber;
+	}
+
+	public FahChannel getChannel(String channelI) {
+		return channelsByI.get(channelI);
 	}
 
 	public String getName() {
@@ -55,7 +59,7 @@ public class FahDevice extends AbstractFahPart {
 	}
 
 	void addChannel(FahChannel channel) {
-		channels.add(channel);
+		channelsByI.put(channel.getI(), channel);
 	}
 
 	void setName(String name) {

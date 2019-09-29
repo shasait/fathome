@@ -46,7 +46,7 @@ public class XppWalker implements XppHandler {
 					if (xppHandler != null) {
 						xppHandler.parse(parser);
 					} else {
-						log.warn("Ignored tag: " + tagName);
+						log.debug("Ignored tag: " + tagName);
 					}
 					break;
 				case XmlPullParser.END_TAG:

@@ -17,8 +17,9 @@
 package de.hasait.fathome;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,10 +32,13 @@ public class FahChannel extends AbstractFahPart {
 
 	private static final Logger log = LoggerFactory.getLogger(FahChannel.class);
 
+	private static final String SWITCH_IDP = "idp000";
+	private static final String DIM_IDP = "idp002";
+
 	private final FahDevice device;
 	private final String i;
 
-	private final Set<String> idps = new TreeSet<>();
+	private final Map<String, String> dataPointValueByI = new TreeMap<>();
 
 	private FahFunction function;
 	private String name;
@@ -59,21 +63,33 @@ public class FahChannel extends AbstractFahPart {
 	}
 
 	public void dimActuator(int state) {
+		assertCanDim();
+
 		if (state < 0 || state > 100) {
 			throw new IllegalArgumentException("state not in range [0, 100]: " + state);
 		}
-		if (!canDim()) {
-			throw new IllegalArgumentException("Dim not supported: " + name + " (" + function.getFidName() + ")");
-		}
 
-		Value dpPath = Value.of(device.getSerialNumber() + "/" + i + "/" + "idp002");
-		Value dpValue = Value.of(Integer.toString(state));
-		Value result = getFreeAtHome().rpcCall("RemoteInterface.setDatapoint", dpPath, dpValue);
-		log.info("result: " + result);
+		String value = Integer.toString(state);
+		rpcSetDataPoint(DIM_IDP, value);
+	}
+
+	public Set<String> getDataPointIs() {
+		return Collections.unmodifiableSet(dataPointValueByI.keySet());
+	}
+
+	public String getDataPointValue(String i) {
+		return dataPointValueByI.get(i);
 	}
 
 	public FahDevice getDevice() {
 		return device;
+	}
+
+	public int getDimState() {
+		assertCanDim();
+
+		String state = getDataPointValue(DIM_IDP);
+		return state == null ? 0 : Integer.parseInt(state);
 	}
 
 	public FahFunction getFunction() {
@@ -84,27 +100,25 @@ public class FahChannel extends AbstractFahPart {
 		return i;
 	}
 
-	public Set<String> getIdps() {
-		return Collections.unmodifiableSet(idps);
-	}
-
 	public String getName() {
 		return name;
 	}
 
-	public void switchActuator(boolean state) {
-		if (!canSwitch()) {
-			throw new IllegalArgumentException("Switch not supported: " + name + " (" + function.getFidName() + ")");
-		}
-		Value dpPath = Value.of(device.getSerialNumber() + "/" + i + "/" + "idp000");
-		Value dpValue = Value.of(state ? "1" : "0");
+	public boolean getSwitchState() {
+		assertCanSwitch();
 
-		Value result = getFreeAtHome().rpcCall("RemoteInterface.setDatapoint", dpPath, dpValue);
-		log.info("result: " + result);
+		String state = getDataPointValue(SWITCH_IDP);
+		return "1".equals(state);
 	}
 
-	void addInputDataPoint(String idp) {
-		idps.add(idp);
+	public void switchActuator(boolean state) {
+		assertCanSwitch();
+
+		rpcSetDataPoint(SWITCH_IDP, state ? "1" : "0");
+	}
+
+	void setDataPoint(String i, String value) {
+		dataPointValueByI.put(i, value);
 	}
 
 	void setFunction(FahFunction function) {
@@ -113,6 +127,27 @@ public class FahChannel extends AbstractFahPart {
 
 	void setName(String name) {
 		this.name = name;
+	}
+
+	private void assertCanDim() {
+		if (!canDim()) {
+			throw new RuntimeException("Dim not supported: " + name + " (" + function.getFidName() + ")");
+		}
+	}
+
+	private void assertCanSwitch() {
+		if (!canSwitch()) {
+			throw new RuntimeException("Switch not supported: " + name + " (" + function.getFidName() + ")");
+		}
+	}
+
+	private void rpcSetDataPoint(String dp, String value) {
+		Value dpPath = Value.of(device.getSerialNumber() + "/" + i + "/" + dp);
+		Value dpValue = Value.of(value);
+
+		Value result = getFreeAtHome().rpcCall("RemoteInterface.setDatapoint", dpPath, dpValue);
+		log.info("result: " + result);
+		setDataPoint(dp, value);
 	}
 
 }

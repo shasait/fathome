@@ -28,9 +28,9 @@ import de.hasait.fathome.util.xpp.XppWalker;
 /**
  *
  */
-class FahProjectParser {
+class FahXmlParser {
 
-	static void parse(String xml, FreeAtHome freeAtHome) {
+	static void parseProjectXml(String xml, FreeAtHome freeAtHome) {
 		XppWalker walker = //
 				new XppWalker( //
 				).putTag("project", //
@@ -41,7 +41,7 @@ class FahProjectParser {
 										   valueParser -> {
 											   String name = valueParser.getAttributeValue(null, "name");
 											   String value = valueParser.nextText();
-											   freeAtHome.addSysap(name, value);
+											   freeAtHome.setFahSysapValue(name, value);
 										   }
 								  )
 						 ).putTag("config", //
@@ -50,7 +50,7 @@ class FahProjectParser {
 										   varParser -> {
 											   String name = varParser.getAttributeValue(null, "name");
 											   String value = varParser.nextText();
-											   freeAtHome.addConfig(name, value);
+											   freeAtHome.setFahConfigValue(name, value);
 										   }
 								  )
 						 ).putTag("strings", //
@@ -154,7 +154,17 @@ class FahProjectParser {
 																					   dataPointParser -> {
 																						   String dataPointI = dataPointParser
 																								   .getAttributeValue(null, "i");
-																						   fahChannel.addInputDataPoint(dataPointI);
+																						   fahChannel.setDataPoint(dataPointI, null);
+
+																						   new XppWalker( //
+																						   ).putTag("value", //
+																									valueParser -> {
+																										String value = valueParser
+																												.nextText();
+																										fahChannel.setDataPoint(
+																												dataPointI, value);
+																									}
+																						   ).parse(dataPointParser);
 																					   }
 																			  )
 																	 ).parse(channelParser);
@@ -177,7 +187,79 @@ class FahProjectParser {
 						 )
 				);
 
-		// FID_SwitchingActuator, FID_DimmingActuator
+		try {
+			XmlPullParser parser = XmlPullParserFactory.newInstance().newPullParser();
+			parser.setInput(new StringReader(xml));
+			walker.parse(parser);
+		} catch (XmlPullParserException | IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	static void parseUpdateXml(String xml, FreeAtHome freeAtHome) {
+		XppWalker walker = //
+				new XppWalker( //
+				).putTag("project", //
+						 new XppWalker( //
+						 ).putTag("sysap", //
+								  new XppWalker( //
+								  ).putTag("value", //
+										   valueParser -> {
+											   String name = valueParser.getAttributeValue(null, "name");
+											   String state = valueParser.getAttributeValue(null, "state");
+											   if ("modified".equals(state)) {
+												   String value = valueParser.nextText();
+												   freeAtHome.setFahSysapValue(name, value);
+											   }
+										   }
+								  )
+						 ).putTag("devices", //
+								  new XppWalker( //
+								  ).putTag("device", //
+										   deviceParser -> {
+											   String deviceSerialNumber = deviceParser.getAttributeValue(null, "serialNumber");
+											   FahDevice fahDevice = freeAtHome.getDeviceBySerialNumber(deviceSerialNumber);
+											   if (fahDevice != null) {
+												   new XppWalker( //
+												   ).putTag("channels", //
+															new XppWalker( //
+															).putTag("channel", //
+																	 channelParser -> {
+																		 String channelI = channelParser.getAttributeValue(null, "i");
+																		 FahChannel fahChannel = fahDevice.getChannel(channelI);
+																		 if (fahChannel != null) {
+																			 new XppWalker( //
+																			 ).putTag("inputs", //
+																					  new XppWalker( //
+																					  ).putTag("dataPoint", //
+																							   dataPointParser -> {
+																								   String dataPointI = dataPointParser
+																										   .getAttributeValue(null, "i");
+																								   new XppWalker( //
+																								   ).putTag("value", //
+																											valueParser -> {
+																												String value = valueParser
+																														.nextText();
+																												fahChannel
+																														.setDataPoint(
+																																dataPointI,
+																																value
+																														);
+																											}
+																								   ).parse(dataPointParser);
+																							   }
+																					  )
+																			 ).parse(channelParser);
+																		 }
+																	 }
+															)
+												   ).parse(deviceParser);
+											   }
+										   }
+								  )
+						 )
+				);
+
 		try {
 			XmlPullParser parser = XmlPullParserFactory.newInstance().newPullParser();
 			parser.setInput(new StringReader(xml));
@@ -191,7 +273,8 @@ class FahProjectParser {
 		return Integer.parseInt(id, 16);
 	}
 
-	private FahProjectParser() {
+
+	private FahXmlParser() {
 		super();
 	}
 
