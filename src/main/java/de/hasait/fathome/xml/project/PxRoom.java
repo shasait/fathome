@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.util.xpp;
+package de.hasait.fathome.xml.project;
 
-import java.io.IOException;
-
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
+import javax.xml.bind.annotation.XmlAttribute;
 
 /**
  *
  */
-@FunctionalInterface
-public interface XppHandler {
+public class PxRoom {
 
-	void parse(XmlPullParser parser) throws IOException, XmlPullParserException;
+	@XmlAttribute
+	public String uid;
+	@XmlAttribute
+	public String name;
 
 }

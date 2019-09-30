@@ -18,8 +18,9 @@ package de.hasait.fathome;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,7 @@ public class FahChannel extends AbstractFahPart {
 	private final FahDevice device;
 	private final String i;
 
-	private final Map<String, String> dataPointValueByI = new TreeMap<>();
+	private final Map<String, String> dataPointValueByI = new ConcurrentHashMap<>();
 
 	private FahFunction function;
 	private String name;
@@ -118,7 +119,10 @@ public class FahChannel extends AbstractFahPart {
 	}
 
 	void setDataPoint(String i, String value) {
-		dataPointValueByI.put(i, value);
+		String oldValue = value != null ? dataPointValueByI.put(i, value) : dataPointValueByI.remove(i);
+		if (!Objects.equals(oldValue, value)) {
+			log.info(name + "@" + i + " changed: " + oldValue + " -> " + value);
+		}
 	}
 
 	void setFunction(FahFunction function) {

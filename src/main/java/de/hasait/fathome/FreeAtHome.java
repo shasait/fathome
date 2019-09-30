@@ -150,27 +150,27 @@ public class FreeAtHome {
 	}
 
 	public FahChannel getChannel(String name) {
-		return channelByName.get(name);
+		return name != null ? channelByName.get(name) : null;
 	}
 
 	public FahDevice getDeviceBySerialNumber(String serialNumber) {
-		return deviceBySerialNumber.get(serialNumber);
+		return serialNumber != null ? deviceBySerialNumber.get(serialNumber) : null;
 	}
 
 	public FahFloor getFloorByName(String name) {
-		return floorByName.get(name);
+		return name != null ? floorByName.get(name) : null;
 	}
 
-	public FahFunction getFunctionByFunctionId(int functionId) {
-		return functionByFunctionId.get(functionId);
+	public FahFunction getFunctionByFunctionId(Integer functionId) {
+		return functionId != null ? functionByFunctionId.get(functionId) : null;
 	}
 
 	public FahRoom getRoomByUid(String uid) {
-		return roomByUid.get(uid);
+		return uid != null ? roomByUid.get(uid) : null;
 	}
 
-	public FahString getStringByNameId(int nameId) {
-		return stringByNameId.get(nameId);
+	public FahString getStringByNameId(Integer nameId) {
+		return nameId != null ? stringByNameId.get(nameId) : null;
 	}
 
 	void addPart(AbstractFahPart part) {
@@ -215,7 +215,7 @@ public class FreeAtHome {
 	void loadAll() {
 		Value result = rpcCall("RemoteInterface.getAll", Value.of("de"), Value.of("4"), Value.of("0"), Value.of("0"));
 		String projectXml = result.getAsString();
-		FahXmlParser.parseProjectXml(projectXml, this);
+		FahXmlProcessor.processProjectXml(projectXml, this);
 	}
 
 	Value rpcCall(String methodName, Value... parameters) {
@@ -249,15 +249,15 @@ public class FreeAtHome {
 							Element updateElement = (Element) payload;
 							if ("update".equals(updateElement.getTagName())) {
 								String updateXml = updateElement.getElementsByTagName("data").item(0).getTextContent();
-								log.info("updateXml: " + updateXml);
-								FahXmlParser.parseUpdateXml(updateXml, this);
+								log.debug("updateXml: " + updateXml);
+								FahXmlProcessor.processUpdateXml(updateXml, this);
 								messageEvent.consume();
 							}
 						}
 					}
 				}
 			} else {
-				log.info("message: " + message);
+				log.debug("message: " + message);
 			}
 		} catch (RuntimeException e) {
 			log.warn("Could not process message", e);

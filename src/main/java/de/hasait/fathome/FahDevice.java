@@ -29,6 +29,7 @@ public class FahDevice extends AbstractFahPart {
 	private final Map<String, FahChannel> channelsByI = new TreeMap<>();
 
 	private FahString type;
+	private FahFunction function;
 	private String name;
 	private FahRoom room;
 
@@ -40,6 +41,10 @@ public class FahDevice extends AbstractFahPart {
 
 	public FahChannel getChannel(String channelI) {
 		return channelsByI.get(channelI);
+	}
+
+	public FahFunction getFunction() {
+		return function;
 	}
 
 	public String getName() {
@@ -60,6 +65,10 @@ public class FahDevice extends AbstractFahPart {
 
 	void addChannel(FahChannel channel) {
 		channelsByI.put(channel.getI(), channel);
+	}
+
+	void setFunction(FahFunction function) {
+		this.function = function;
 	}
 
 	void setName(String name) {
