@@ -17,6 +17,7 @@
 package de.hasait.fathome;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,11 +35,14 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import rocks.xmpp.addr.Jid;
 import rocks.xmpp.core.XmppException;
+import rocks.xmpp.core.net.ChannelEncryption;
 import rocks.xmpp.core.net.client.SocketConnectionConfiguration;
 import rocks.xmpp.core.session.Extension;
 import rocks.xmpp.core.session.XmppClient;
 import rocks.xmpp.core.session.XmppSessionConfiguration;
+import rocks.xmpp.core.session.debug.ConsoleDebugger;
 import rocks.xmpp.core.stanza.MessageEvent;
+import rocks.xmpp.core.stanza.PresenceEvent;
 import rocks.xmpp.core.stanza.model.Message;
 import rocks.xmpp.core.stanza.model.Presence;
 import rocks.xmpp.core.stanza.model.client.ClientMessage;
@@ -46,6 +50,7 @@ import rocks.xmpp.extensions.pubsub.model.Item;
 import rocks.xmpp.extensions.pubsub.model.event.Event;
 import rocks.xmpp.extensions.rpc.RpcManager;
 import rocks.xmpp.extensions.rpc.model.Value;
+import rocks.xmpp.im.subscription.PresenceManager;
 import rocks.xmpp.util.concurrent.AsyncResult;
 
 import de.hasait.fathome.util.http.AsStringContentHandler;
@@ -72,6 +77,8 @@ public class FreeAtHome {
 	private XmppClient xmppClient;
 	private String updateNamespace;
 	private Jid rpcJid;
+	private FahCryptContext cryptContext;
+	private FahUser user;
 
 	public void connect(FreeAtHomeConfiguration configuration) {
 		try {
@@ -84,18 +91,30 @@ public class FreeAtHome {
 			rpcJid = Jid.of("mrha@" + xmppDomain + "/rpc");
 
 			CloseableHttpClient httpClient = HttpClients.createDefault();
-			Map<String, String> jidStrings = new TreeMap<>();
+			Map<String, FahUser> fahUsers = new TreeMap<>();
 			try {
 				try {
 					HttpUtil.httpGet(httpClient, "http://" + fahSysApHostname + "/settings.json",
 									 new AsStringContentHandler(contentString -> {
 										 JSONObject root = new JSONObject(contentString);
 										 JSONArray users = root.getJSONArray("users");
-										 for (int i = 0; i < users.length(); i++) {
-											 JSONObject user = users.getJSONObject(i);
-											 String name = user.getString("name");
-											 String jidString = user.getString("jid");
-											 jidStrings.put(name, jidString);
+										 for (int userIndex = 0; userIndex < users.length(); userIndex++) {
+											 JSONObject user = users.getJSONObject(userIndex);
+											 FahUser fahUser = new FahUser(user.getString("name"));
+											 fahUser.setJid(user.getString("jid"));
+
+											 JSONObject authmethods = user.getJSONObject("authmethods");
+											 if (authmethods != null) {
+												 for (String key : authmethods.keySet()) {
+													 JSONObject authmethod = authmethods.getJSONObject(key);
+													 FahUser.AuthMethod fahAuthMethod = new FahUser.AuthMethod(key);
+													 fahAuthMethod.setIterations(authmethod.getInt("iterations"));
+													 fahAuthMethod.setSalt(Base64.getDecoder().decode(authmethod.getString("salt")));
+													 fahUser.getAuthMethods().put(key, fahAuthMethod);
+												 }
+											 }
+
+											 fahUsers.put(fahUser.getName(), fahUser);
 										 }
 									 })
 					);
@@ -106,10 +125,12 @@ public class FreeAtHome {
 				HttpClientUtils.closeQuietly(httpClient);
 			}
 
-			if (!jidStrings.containsKey(fahUsername)) {
-				throw new IllegalArgumentException("Invalid username: " + fahUsername + " not in " + jidStrings.keySet());
+			if (!fahUsers.containsKey(fahUsername)) {
+				throw new IllegalArgumentException("Invalid username: " + fahUsername + " not in " + fahUsers.keySet());
 			}
-			Jid userJid = Jid.of(jidStrings.get(fahUsername));
+
+			user = fahUsers.get(fahUsername);
+			Jid userJid = Jid.of(user.getJid());
 			String xmppUsername = userJid.getLocal();
 			log.info("Login using " + xmppUsername + "...");
 
@@ -117,15 +138,21 @@ public class FreeAtHome {
 					SocketConnectionConfiguration.builder() //
 												 .hostname(fahSysApHostname) //
 												 .port(5222) //
+												 .channelEncryption(ChannelEncryption.OPTIONAL) //
 												 .build();
 
 			XmppSessionConfiguration sessionConfiguration = //
 					XmppSessionConfiguration.builder() //
 											.extensions(Extension.of(updateNamespace, null, true, true),
 														Extension.of(updateNamespace, null, true)
-											).build();
+											) //
+											.debugger(ConsoleDebugger.class) //
+											.build();
 
 			xmppClient = XmppClient.create(xmppDomain, sessionConfiguration, connectionConfiguration);
+
+			xmppClient.addInboundPresenceListener(this::handlePresenceEvent);
+
 			xmppClient.connect();
 			xmppClient.login(xmppUsername, fahPassword);
 
@@ -134,6 +161,8 @@ public class FreeAtHome {
 			Presence presence = new Presence(rpcJid, Presence.Type.SUBSCRIBE, null, null, null, null, userJid, null, null, null);
 			xmppClient.send(presence);
 			xmppClient.send(new Presence());
+
+			initCryptContext(user, fahPassword);
 
 			loadAll();
 		} catch (XmppException e) {
@@ -215,7 +244,9 @@ public class FreeAtHome {
 	void loadAll() {
 		Value result = rpcCall("RemoteInterface.getAll", Value.of("de"), Value.of("4"), Value.of("0"), Value.of("0"));
 		String projectXml = result.getAsString();
-		FahXmlProcessor.processProjectXml(projectXml, this);
+		if (projectXml != null) {
+			FahXmlProcessor.processProjectXml(projectXml, this);
+		}
 	}
 
 	Value rpcCall(String methodName, Value... parameters) {
@@ -262,6 +293,20 @@ public class FreeAtHome {
 		} catch (RuntimeException e) {
 			log.warn("Could not process message", e);
 		}
+	}
+
+	private void handlePresenceEvent(PresenceEvent presenceEvent) {
+		Presence presence = presenceEvent.getPresence();
+		Jid from = presence.getFrom();
+		if (presence.getType() == Presence.Type.SUBSCRIBE) {
+			log.info("Subscribe from: {}", from);
+			xmppClient.getManager(PresenceManager.class).approveSubscription(from);
+		}
+	}
+
+	private void initCryptContext(FahUser user, String fahPassword) {
+		cryptContext = new FahCryptContext(this);
+		cryptContext.init(user, fahPassword.toCharArray());
 	}
 
 }
