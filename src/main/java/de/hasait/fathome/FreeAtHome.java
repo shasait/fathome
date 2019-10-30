@@ -162,7 +162,7 @@ public class FreeAtHome {
 			xmppClient.send(presence);
 			xmppClient.send(new Presence());
 
-			initCryptContext(user, fahPassword);
+			// initCryptContext(user, fahPassword);
 
 			loadAll();
 		} catch (XmppException e) {
@@ -242,7 +242,7 @@ public class FreeAtHome {
 	}
 
 	void loadAll() {
-		Value result = rpcCall("RemoteInterface.getAll", Value.of("de"), Value.of("4"), Value.of("0"), Value.of("0"));
+		Value result = rpcCall("RemoteInterface.getAll", Value.of("de"), Value.of(4), Value.of(0), Value.of(0));
 		String projectXml = result.getAsString();
 		if (projectXml != null) {
 			FahXmlProcessor.processProjectXml(projectXml, this);
