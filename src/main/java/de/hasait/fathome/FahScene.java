@@ -37,7 +37,7 @@ public class FahScene {
 		this.activateDatapoint = activateDatapoint;
 	}
 
-	public void activateScene() {
+	public void activate() {
 		channel.rpcSetDataPoint(activateDatapoint, "1");
 	}
 

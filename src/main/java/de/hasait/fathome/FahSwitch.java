@@ -37,11 +37,11 @@ public class FahSwitch {
 		this.switchDatapoint = switchDatapoint;
 	}
 
-	public boolean isSwitchOff() {
-		return !isSwitchOn();
+	public boolean isOff() {
+		return !isOn();
 	}
 
-	public boolean isSwitchOn() {
+	public boolean isOn() {
 		String state = channel.getDataPointValue(switchDatapoint);
 		return "1".equals(state);
 	}
@@ -58,8 +58,8 @@ public class FahSwitch {
 		setSwitchState(true);
 	}
 
-	public void toggleSwitch() {
-		setSwitchState(!isSwitchOn());
+	public void toggle() {
+		setSwitchState(!isOn());
 	}
 
 }

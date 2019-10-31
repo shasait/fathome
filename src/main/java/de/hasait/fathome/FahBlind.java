@@ -46,32 +46,32 @@ public class FahBlind {
 		this.blindPosStateDp = blindPosStateDp;
 	}
 
-	public void blindMoveDown() {
+	public void moveDown() {
 		channel.rpcSetDataPoint(blindDatapoint, "1");
 	}
 
-	public void blindMoveUp() {
+	public void moveUp() {
 		channel.rpcSetDataPoint(blindDatapoint, "0");
 	}
 
-	public void blindStop() {
+	public void stop() {
 		channel.rpcSetDataPoint(blindStopDatapoint, "1");
 	}
 
 	/**
 	 * @return 0..100 (0 = up; 100 = down).
 	 */
-	public int getBlindPosition() {
+	public int getPosition() {
 		String state = channel.getDataPointValue(blindPosStateDp);
 		return state == null ? 0 : Integer.parseInt(state);
 	}
 
-	public boolean isBlindMovingDown() {
+	public boolean isMovingDown() {
 		String state = channel.getDataPointValue(blindMoveStateDp);
 		return "3".equals(state);
 	}
 
-	public boolean isBlindMovingUp() {
+	public boolean isMovingUp() {
 		String state = channel.getDataPointValue(blindMoveStateDp);
 		return "2".equals(state);
 	}
