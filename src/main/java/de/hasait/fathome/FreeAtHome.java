@@ -178,12 +178,22 @@ public class FreeAtHome {
 		return Collections.unmodifiableCollection(floorByUid.values());
 	}
 
+	public FahBlind getBlind(String name) {
+		FahChannel channel = getChannel(name);
+		return channel != null && channel.isBlind() ? channel.asBlind() : null;
+	}
+
 	public FahChannel getChannel(String name) {
 		return name != null ? channelByName.get(name) : null;
 	}
 
 	public FahDevice getDeviceBySerialNumber(String serialNumber) {
 		return serialNumber != null ? deviceBySerialNumber.get(serialNumber) : null;
+	}
+
+	public FahDimmer getDimmer(String name) {
+		FahChannel channel = getChannel(name);
+		return channel != null && channel.isDimmer() ? channel.asDimmer() : null;
 	}
 
 	public FahFloor getFloorByName(String name) {
@@ -198,8 +208,18 @@ public class FreeAtHome {
 		return uid != null ? roomByUid.get(uid) : null;
 	}
 
+	public FahScene getScene(String name) {
+		FahChannel channel = getChannel(name);
+		return channel != null && channel.isScene() ? channel.asScene() : null;
+	}
+
 	public FahString getStringByNameId(Integer nameId) {
 		return nameId != null ? stringByNameId.get(nameId) : null;
+	}
+
+	public FahSwitch getSwitch(String name) {
+		FahChannel channel = getChannel(name);
+		return channel != null && channel.isSwitch() ? channel.asSwitch() : null;
 	}
 
 	void addPart(AbstractFahPart part) {

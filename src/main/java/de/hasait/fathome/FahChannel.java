@@ -33,9 +33,6 @@ public class FahChannel extends AbstractFahPart {
 
 	private static final Logger log = LoggerFactory.getLogger(FahChannel.class);
 
-	private static final String SWITCH_IDP = "idp000";
-	private static final String DIM_IDP = "idp002";
-
 	private final FahDevice device;
 	private final String i;
 
@@ -53,25 +50,24 @@ public class FahChannel extends AbstractFahPart {
 		device.addChannel(this);
 	}
 
-	public boolean canDim() {
-		String fidName = function.getFidName();
-		return "FID_DimmingActuator".equals(fidName);
+	public FahBlind asBlind() {
+		assertFunction(isBlind(), "blind");
+		return new FahBlind(this);
 	}
 
-	public boolean canSwitch() {
-		String fidName = function.getFidName();
-		return "FID_SwitchingActuator".equals(fidName) || "FID_DimmingActuator".equals(fidName);
+	public FahDimmer asDimmer() {
+		assertFunction(isDimmer(), "dimmer");
+		return new FahDimmer(this);
 	}
 
-	public void dimActuator(int state) {
-		assertCanDim();
+	public FahScene asScene() {
+		assertFunction(isScene(), "scene");
+		return new FahScene(this);
+	}
 
-		if (state < 0 || state > 100) {
-			throw new IllegalArgumentException("state not in range [0, 100]: " + state);
-		}
-
-		String value = Integer.toString(state);
-		rpcSetDataPoint(DIM_IDP, value);
+	public FahSwitch asSwitch() {
+		assertFunction(isSwitch(), "switch");
+		return new FahSwitch(this);
 	}
 
 	public Set<String> getDataPointIs() {
@@ -86,13 +82,6 @@ public class FahChannel extends AbstractFahPart {
 		return device;
 	}
 
-	public int getDimState() {
-		assertCanDim();
-
-		String state = getDataPointValue(DIM_IDP);
-		return state == null ? 0 : Integer.parseInt(state);
-	}
-
 	public FahFunction getFunction() {
 		return function;
 	}
@@ -105,17 +94,32 @@ public class FahChannel extends AbstractFahPart {
 		return name;
 	}
 
-	public boolean getSwitchState() {
-		assertCanSwitch();
-
-		String state = getDataPointValue(SWITCH_IDP);
-		return "1".equals(state);
+	public boolean isBlind() {
+		String fidName = function.getFidName();
+		return "FID_BlindActuator".equals(fidName);
 	}
 
-	public void switchActuator(boolean state) {
-		assertCanSwitch();
+	public boolean isDimmer() {
+		String fidName = function.getFidName();
+		return "FID_DimmingActuator".equals(fidName);
+	}
 
-		rpcSetDataPoint(SWITCH_IDP, state ? "1" : "0");
+	public boolean isScene() {
+		return function.getFunctionId() == 0x4800;
+	}
+
+	public boolean isSwitch() {
+		String fidName = function.getFidName();
+		return "FID_SwitchingActuator".equals(fidName) || "FID_DimmingActuator".equals(fidName);
+	}
+
+	void rpcSetDataPoint(String dp, String value) {
+		Value dpPath = Value.of(device.getSerialNumber() + "/" + i + "/" + dp);
+		Value dpValue = Value.of(value);
+
+		Value result = getFreeAtHome().rpcCall("RemoteInterface.setDatapoint", dpPath, dpValue);
+		log.info("result: " + result);
+		setDataPoint(dp, value);
 	}
 
 	void setDataPoint(String i, String value) {
@@ -133,25 +137,10 @@ public class FahChannel extends AbstractFahPart {
 		this.name = name;
 	}
 
-	private void assertCanDim() {
-		if (!canDim()) {
-			throw new RuntimeException("Dim not supported: " + name + " (" + function.getFidName() + ")");
+	private void assertFunction(boolean assertion, String type) {
+		if (!assertion) {
+			throw new RuntimeException("Not a " + type + ": " + name + " (" + function.getFidName() + "/" + function.getFunctionId() + ")");
 		}
-	}
-
-	private void assertCanSwitch() {
-		if (!canSwitch()) {
-			throw new RuntimeException("Switch not supported: " + name + " (" + function.getFidName() + ")");
-		}
-	}
-
-	private void rpcSetDataPoint(String dp, String value) {
-		Value dpPath = Value.of(device.getSerialNumber() + "/" + i + "/" + dp);
-		Value dpValue = Value.of(value);
-
-		Value result = getFreeAtHome().rpcCall("RemoteInterface.setDatapoint", dpPath, dpValue);
-		log.info("result: " + result);
-		setDataPoint(dp, value);
 	}
 
 }
