@@ -96,7 +96,7 @@ public class FahChannel extends AbstractFahPart {
 
 	public boolean isBlind() {
 		String fidName = function.getFidName();
-		return "FID_BlindActuator".equals(fidName);
+		return "FID_BlindActuator".equals(fidName) || "FID_ShutterActuator".equals(fidName);
 	}
 
 	public boolean isDimmer() {
