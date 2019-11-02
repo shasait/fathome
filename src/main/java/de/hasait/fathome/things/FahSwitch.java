@@ -14,26 +14,28 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
+package de.hasait.fathome.things;
+
+import de.hasait.fathome.project.AbstractFahChannel;
+import de.hasait.fathome.project.FahDevice;
+import de.hasait.fathome.project.FahFunction;
 
 /**
  *
  */
-public class FahSwitch {
+public class FahSwitch extends AbstractFahChannel {
 
 	static final String DEFAULT_SWITCH_DP = "idp0000";
 
-	protected final FahChannel channel;
 	private final String switchDatapoint;
 
-	FahSwitch(FahChannel channel) {
-		this(channel, DEFAULT_SWITCH_DP);
+	public FahSwitch(FahDevice device, String id, FahFunction function) {
+		this(device, id, function, DEFAULT_SWITCH_DP);
 	}
 
-	FahSwitch(FahChannel channel, String switchDatapoint) {
-		super();
+	public FahSwitch(FahDevice device, String id, FahFunction function, String switchDatapoint) {
+		super(device, id, function);
 
-		this.channel = channel;
 		this.switchDatapoint = switchDatapoint;
 	}
 
@@ -42,12 +44,12 @@ public class FahSwitch {
 	}
 
 	public boolean isOn() {
-		String state = channel.getDataPointValue(switchDatapoint);
+		String state = getDataPointValue(switchDatapoint);
 		return "1".equals(state);
 	}
 
 	public void setSwitchState(boolean state) {
-		channel.rpcSetDataPoint(switchDatapoint, state ? "1" : "0");
+		rpcSetDataPoint(switchDatapoint, state ? "1" : "0");
 	}
 
 	public void switchOff() {

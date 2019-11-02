@@ -14,31 +14,33 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
+package de.hasait.fathome.things;
+
+import de.hasait.fathome.project.AbstractFahChannel;
+import de.hasait.fathome.project.FahDevice;
+import de.hasait.fathome.project.FahFunction;
 
 /**
  *
  */
-public class FahScene {
+public class FahScene extends AbstractFahChannel {
 
 	static final String DEFAULT_ACTIVATE_DP = "odp0000";
 
-	protected final FahChannel channel;
 	private final String activateDatapoint;
 
-	FahScene(FahChannel channel) {
-		this(channel, DEFAULT_ACTIVATE_DP);
+	public FahScene(FahDevice device, String id, FahFunction function) {
+		this(device, id, function, DEFAULT_ACTIVATE_DP);
 	}
 
-	FahScene(FahChannel channel, String activateDatapoint) {
-		super();
+	public FahScene(FahDevice device, String id, FahFunction function, String activateDatapoint) {
+		super(device, id, function);
 
-		this.channel = channel;
 		this.activateDatapoint = activateDatapoint;
 	}
 
 	public void activate() {
-		channel.rpcSetDataPoint(activateDatapoint, "1");
+		rpcSetDataPoint(activateDatapoint, "1");
 	}
 
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
+package de.hasait.fathome.comm;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,13 +48,13 @@ public class FahUser {
 		this.jid = jid;
 	}
 
-	static class AuthMethod {
+	public static class AuthMethod {
 
 		private final String name;
 		private int iterations;
 		private byte[] salt;
 
-		AuthMethod(String name) {
+		public AuthMethod(String name) {
 			this.name = name;
 		}
 

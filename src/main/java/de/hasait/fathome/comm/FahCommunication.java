@@ -14,42 +14,15 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
+package de.hasait.fathome.comm;
+
+import rocks.xmpp.extensions.rpc.model.Value;
 
 /**
  *
  */
-public class FahFunction extends AbstractFahPart {
+public interface FahCommunication {
 
-	private final int functionId;
-
-	private FahString name;
-	private String fidName;
-
-	FahFunction(int functionId) {
-		super();
-
-		this.functionId = functionId;
-	}
-
-	public String getFidName() {
-		return fidName;
-	}
-
-	public int getFunctionId() {
-		return functionId;
-	}
-
-	public FahString getName() {
-		return name;
-	}
-
-	void setFidName(String fidName) {
-		this.fidName = fidName;
-	}
-
-	void setName(FahString name) {
-		this.name = name;
-	}
+	Value rpcCall(String methodName, Value... parameters);
 
 }

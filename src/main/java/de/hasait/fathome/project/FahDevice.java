@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
+package de.hasait.fathome.project;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -26,7 +26,7 @@ public class FahDevice extends AbstractFahPart {
 
 	private final String serialNumber;
 
-	private final Map<String, FahChannel> channelsByI = new TreeMap<>();
+	private final Map<String, AbstractFahChannel> channelsById = new TreeMap<>();
 
 	private FahString type;
 	private FahFunction function;
@@ -39,8 +39,8 @@ public class FahDevice extends AbstractFahPart {
 		this.serialNumber = serialNumber;
 	}
 
-	public FahChannel getChannel(String channelI) {
-		return channelsByI.get(channelI);
+	public AbstractFahChannel getChannel(String channelId) {
+		return channelsById.get(channelId);
 	}
 
 	public FahFunction getFunction() {
@@ -63,8 +63,8 @@ public class FahDevice extends AbstractFahPart {
 		return type;
 	}
 
-	void addChannel(FahChannel channel) {
-		channelsByI.put(channel.getI(), channel);
+	void addChannel(AbstractFahChannel channel) {
+		channelsById.put(channel.getId(), channel);
 	}
 
 	void setFunction(FahFunction function) {

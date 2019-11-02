@@ -14,56 +14,42 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+package de.hasait.fathome.project;
 
 /**
  *
  */
-public class FahFloor extends AbstractFahPart {
+public class FahFunction extends AbstractFahPart {
 
-	private final String uid;
+	private final int functionId;
 
-	private final Set<FahRoom> rooms = new HashSet<>();
+	private FahString name;
+	private String fidName;
 
-	private String name;
-
-	private int level;
-
-	public FahFloor(String uid) {
+	FahFunction(int functionId) {
 		super();
 
-		this.uid = uid;
+		this.functionId = functionId;
 	}
 
-	public int getLevel() {
-		return level;
+	public String getFidName() {
+		return fidName;
 	}
 
-	public String getName() {
+	public int getFunctionId() {
+		return functionId;
+	}
+
+	public FahString getName() {
 		return name;
 	}
 
-	public Set<FahRoom> getRooms() {
-		return Collections.unmodifiableSet(rooms);
+	void setFidName(String fidName) {
+		this.fidName = fidName;
 	}
 
-	public String getUid() {
-		return uid;
-	}
-
-	public void setLevel(int level) {
-		this.level = level;
-	}
-
-	public void setName(String name) {
+	void setName(FahString name) {
 		this.name = name;
 	}
 
-	void addRoom(FahRoom room) {
-		rooms.add(room);
-	}
 }

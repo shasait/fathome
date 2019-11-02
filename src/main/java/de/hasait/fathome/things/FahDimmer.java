@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
+package de.hasait.fathome.things;
+
+import de.hasait.fathome.project.FahDevice;
+import de.hasait.fathome.project.FahFunction;
 
 /**
  *
@@ -25,12 +28,12 @@ public class FahDimmer extends FahSwitch {
 
 	private final String dimDatapoint;
 
-	FahDimmer(FahChannel channel) {
-		this(channel, DEFAULT_SWITCH_DP, DEFAULT_DIM_DP);
+	public FahDimmer(FahDevice device, String id, FahFunction function) {
+		this(device, id, function, DEFAULT_SWITCH_DP, DEFAULT_DIM_DP);
 	}
 
-	FahDimmer(FahChannel channel, String switchDatapoint, String dimDatapoint) {
-		super(channel, switchDatapoint);
+	public FahDimmer(FahDevice device, String id, FahFunction function, String switchDatapoint, String dimDatapoint) {
+		super(device, id, function, switchDatapoint);
 
 		this.dimDatapoint = dimDatapoint;
 	}
@@ -39,7 +42,7 @@ public class FahDimmer extends FahSwitch {
 	 * @return 0..100 (0 = off; 100 = on).
 	 */
 	public int getDimLevel() {
-		String state = channel.getDataPointValue(dimDatapoint);
+		String state = getDataPointValue(dimDatapoint);
 		return state == null ? 0 : Integer.parseInt(state);
 	}
 
@@ -52,7 +55,7 @@ public class FahDimmer extends FahSwitch {
 		}
 
 		String levelAsString = Integer.toString(level);
-		channel.rpcSetDataPoint(dimDatapoint, levelAsString);
+		rpcSetDataPoint(dimDatapoint, levelAsString);
 	}
 
 }

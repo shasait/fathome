@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
+package de.hasait.fathome.project;
 
 import java.io.StringReader;
 import java.util.List;
@@ -29,22 +29,22 @@ import de.hasait.fathome.xml.update.UxProject;
 /**
  *
  */
-class FahXmlProcessor {
+public class FahXmlProcessor {
 
-	static void processProjectXml(String xml, FreeAtHome freeAtHome) {
+	public static void processProjectXml(String xml, FahProject fahProject, FahChannelFactory channelFactory) {
 		PxProject xProject = JAXB.unmarshal(new StringReader(xml), PxProject.class);
-		xProject.sysapValues.forEach(xSysapValue -> freeAtHome.setFahSysapValue(xSysapValue.name, xSysapValue.value));
-		xProject.configValues.forEach(xConfigValue -> freeAtHome.setFahConfigValue(xConfigValue.name, xConfigValue.value));
+		xProject.sysapValues.forEach(xSysapValue -> fahProject.setFahSysapValue(xSysapValue.name, xSysapValue.value));
+		xProject.configValues.forEach(xConfigValue -> fahProject.setFahConfigValue(xConfigValue.name, xConfigValue.value));
 		xProject.strings.forEach(xString -> {
 			FahString fahString = new FahString(parseId(xString.nameId));
 			fahString.setValue(xString.value);
-			freeAtHome.addPart(fahString);
+			fahProject.addPart(fahString);
 		});
 		xProject.fahDefinitions.functions.forEach(xFunction -> {
 			FahFunction fahFunction = new FahFunction(parseId(xFunction.functionId));
 			fahFunction.setFidName(xFunction.name);
-			fahFunction.setName(freeAtHome.getStringByNameId(parseId(xFunction.nameId)));
-			freeAtHome.addPart(fahFunction);
+			fahFunction.setName(fahProject.getStringByNameId(parseId(xFunction.nameId)));
+			fahProject.addPart(fahFunction);
 		});
 		xProject.floors.forEach(xFloor -> {
 			FahFloor fahFloor = new FahFloor(xFloor.uid);
@@ -53,42 +53,42 @@ class FahXmlProcessor {
 			xFloor.rooms.forEach(xRoom -> {
 				FahRoom fahRoom = new FahRoom(fahFloor, xRoom.uid);
 				fahRoom.setName(xRoom.name);
-				freeAtHome.addPart(fahRoom);
+				fahProject.addPart(fahRoom);
 			});
-			freeAtHome.addPart(fahFloor);
+			fahProject.addPart(fahFloor);
 		});
 		xProject.devices.forEach(xDevice -> {
 			FahDevice fahDevice = new FahDevice(xDevice.serialNumber);
-			fahDevice.setType(freeAtHome.getStringByNameId(parseId(xDevice.nameId)));
-			fahDevice.setFunction(freeAtHome.getFunctionByFunctionId(parseId(xDevice.functionId)));
+			fahDevice.setType(fahProject.getStringByNameId(parseId(xDevice.nameId)));
+			fahDevice.setFunction(fahProject.getFunctionByFunctionId(parseId(xDevice.functionId)));
 			fahDevice.setName(findKV(xDevice.attributes, "displayName"));
 			String roomUid = findKV(xDevice.attributes, "room");
-			fahDevice.setRoom(freeAtHome.getRoomByUid(roomUid));
+			fahDevice.setRoom(fahProject.getRoomByUid(roomUid));
 			xDevice.channels.forEach(xChannel -> {
-				FahChannel fahChannel = new FahChannel(fahDevice, xChannel.i);
-				fahChannel.setName(findKV(xChannel.attributes, "displayName"));
 				Integer functionId = parseId(findKV(xChannel.attributes, "functionId"));
-				fahChannel.setFunction(freeAtHome.getFunctionByFunctionId(functionId));
+				FahFunction function = fahProject.getFunctionByFunctionId(functionId);
+				AbstractFahChannel fahChannel = channelFactory.createChannel(fahDevice, xChannel.i, function);
+				fahChannel.setName(findKV(xChannel.attributes, "displayName"));
 				Stream.concat(xChannel.inputs.stream(), xChannel.outputs.stream()).forEach(pxDataPoint -> {
 					String value = pxDataPoint.values.stream().findFirst().orElse(null);
 					fahChannel.setDataPoint(pxDataPoint.i, value);
 				});
-				freeAtHome.addPart(fahChannel);
+				fahProject.addPart(fahChannel);
 			});
-			freeAtHome.addPart(fahDevice);
+			fahProject.addPart(fahDevice);
 		});
 	}
 
-	static void processUpdateXml(String xml, FreeAtHome freeAtHome) {
+	public static void processUpdateXml(String xml, FahProject fahProject) {
 		UxProject xProject = JAXB.unmarshal(new StringReader(xml), UxProject.class);
 		xProject.sysapValues.forEach(xSysapValue -> {
-			freeAtHome.setFahSysapValue(xSysapValue.name, xSysapValue.value);
+			fahProject.setFahSysapValue(xSysapValue.name, xSysapValue.value);
 		});
 		xProject.devices.forEach(xDevice -> {
-			FahDevice fahDevice = freeAtHome.getDeviceBySerialNumber(xDevice.serialNumber);
+			FahDevice fahDevice = fahProject.getDeviceBySerialNumber(xDevice.serialNumber);
 			if (fahDevice != null) {
 				xDevice.channels.forEach(xChannel -> {
-					FahChannel fahChannel = fahDevice.getChannel(xChannel.i);
+					AbstractFahChannel fahChannel = fahDevice.getChannel(xChannel.i);
 					if (fahChannel != null) {
 						Stream.concat(xChannel.inputs.stream(), xChannel.outputs.stream()).forEach(xDataPoint -> {
 							String value = xDataPoint.values.stream().findFirst().orElse(null);

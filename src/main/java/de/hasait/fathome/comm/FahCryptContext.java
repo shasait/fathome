@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
+package de.hasait.fathome.comm;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
@@ -50,15 +50,15 @@ public class FahCryptContext {
 		HASH_HMAC_ALGORITHMS.put(hashAlgorithm, hmacAlgorithm);
 	}
 
-	private final FreeAtHome freeAtHome;
+	private final FahCommunication communication;
 
 	private KeyPair keyPair;
 	private byte[] clientNonce;
 
-	public FahCryptContext(FreeAtHome freeAtHome) {
+	public FahCryptContext(FahCommunication communication) {
 		super();
 
-		this.freeAtHome = freeAtHome;
+		this.communication = communication;
 
 	}
 
@@ -72,8 +72,8 @@ public class FahCryptContext {
 		clientNonce = Sodium.randombytes_buf(16);
 
 		byte[] clientKey = createClientKey(password, authMethod);
-		Value result = freeAtHome.rpcCall("RemoteInterface.cryptExchangeLocalKeys2", Value.of(user.getJid()), Value.of(clientKey),
-										  Value.of(authMethod.getScramAlgorithm()), Value.of(0)
+		Value result = communication.rpcCall("RemoteInterface.cryptExchangeLocalKeys2", Value.of(user.getJid()), Value.of(clientKey),
+											 Value.of(authMethod.getScramAlgorithm()), Value.of(0)
 		);
 		byte[] serverResponse = result.getAsByteArray();
 		// serverResponse currently ignored

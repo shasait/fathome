@@ -14,29 +14,18 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome;
+package de.hasait.fathome.project;
+
+import de.hasait.fathome.project.AbstractFahChannel;
+import de.hasait.fathome.project.FahDevice;
+import de.hasait.fathome.project.FahFunction;
 
 /**
  *
  */
-public abstract class AbstractFahPart {
+@FunctionalInterface
+public interface FahChannelFactory {
 
-	private FreeAtHome freeAtHome;
-
-	AbstractFahPart() {
-		super();
-	}
-
-	public FreeAtHome getFreeAtHome() {
-		return freeAtHome;
-	}
-
-	void setFreeAtHome(FreeAtHome newFreeAtHome) {
-		if (freeAtHome == newFreeAtHome) {
-			return;
-		}
-		this.freeAtHome = newFreeAtHome;
-		freeAtHome.addPart(this);
-	}
+	AbstractFahChannel createChannel(FahDevice device, String id, FahFunction function);
 
 }

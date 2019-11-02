@@ -17,19 +17,14 @@
 package de.hasait.fathome;
 
 import java.io.IOException;
-import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.http.client.utils.HttpClientUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -53,6 +48,21 @@ import rocks.xmpp.extensions.rpc.model.Value;
 import rocks.xmpp.im.subscription.PresenceManager;
 import rocks.xmpp.util.concurrent.AsyncResult;
 
+import de.hasait.fathome.comm.FahCommunication;
+import de.hasait.fathome.comm.FahCryptContext;
+import de.hasait.fathome.comm.FahUser;
+import de.hasait.fathome.comm.FahUserJsonProcessor;
+import de.hasait.fathome.project.AbstractFahChannel;
+import de.hasait.fathome.project.FahChannelFactory;
+import de.hasait.fathome.project.FahFloor;
+import de.hasait.fathome.project.FahFunction;
+import de.hasait.fathome.project.FahProject;
+import de.hasait.fathome.project.FahXmlProcessor;
+import de.hasait.fathome.things.FahBlind;
+import de.hasait.fathome.things.FahDimmer;
+import de.hasait.fathome.things.FahScene;
+import de.hasait.fathome.things.FahSwitch;
+import de.hasait.fathome.things.FahUnknown;
 import de.hasait.fathome.util.http.AsStringContentHandler;
 import de.hasait.fathome.util.http.HttpUtil;
 
@@ -63,22 +73,46 @@ public class FreeAtHome {
 
 	private static final Logger log = LoggerFactory.getLogger(FreeAtHome.class);
 
-	private final Set<AbstractFahPart> parts = new HashSet<>();
-	private final Map<String, String> sysap = new TreeMap<>();
-	private final Map<String, String> config = new TreeMap<>();
-	private final Map<Integer, FahString> stringByNameId = new TreeMap<>();
-	private final Map<Integer, FahFunction> functionByFunctionId = new TreeMap<>();
-	private final Map<String, FahFloor> floorByUid = new TreeMap<>();
-	private final Map<String, FahFloor> floorByName = new TreeMap<>();
-	private final Map<String, FahRoom> roomByUid = new TreeMap<>();
-	private final Map<String, FahDevice> deviceBySerialNumber = new TreeMap<>();
-	private final Map<String, FahChannel> channelByName = new TreeMap<>();
+	private final Map<String, FahChannelFactory> channelFactoriesByFidName = new HashMap<>();
+	private final Map<Integer, FahChannelFactory> channelFactoriesByFunctionId = new HashMap<>();
+
+	private final FahCommunication communication = new FahCommunication() {
+		@Override
+		public Value rpcCall(String methodName, Value... parameters) {
+			try {
+				RpcManager rpcManager = xmppClient.getManager(RpcManager.class);
+				AsyncResult<Value> asyncResult = rpcManager.call(rpcJid, methodName, parameters);
+				return asyncResult.getResult();
+			} catch (XmppException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	};
+
+	private final FahChannelFactory channelFactory = (device, id, function) -> {
+		FahChannelFactory channelFactory = getChannelFactory(function);
+		if (channelFactory != null) {
+			return channelFactory.createChannel(device, id, function);
+		}
+		return new FahUnknown(device, id, function);
+	};
 
 	private XmppClient xmppClient;
 	private String updateNamespace;
 	private Jid rpcJid;
 	private FahCryptContext cryptContext;
 	private FahUser user;
+	private FahProject project = new FahProject(communication);
+
+	public FreeAtHome() {
+		super();
+
+		registerChannelFactoryForFidName("FID_SwitchingActuator", FahSwitch::new);
+		registerChannelFactoryForFidName("FID_DimmingActuator", FahDimmer::new);
+		registerChannelFactoryForFidName("FID_BlindActuator", FahBlind::new);
+		registerChannelFactoryForFidName("FID_ShutterActuator", FahBlind::new);
+		registerChannelFactoryForFunctionId(0x4800, FahScene::new);
+	}
 
 	public void connect(FreeAtHomeConfiguration configuration) {
 		try {
@@ -94,30 +128,8 @@ public class FreeAtHome {
 			Map<String, FahUser> fahUsers = new TreeMap<>();
 			try {
 				try {
-					HttpUtil.httpGet(httpClient, "http://" + fahSysApHostname + "/settings.json",
-									 new AsStringContentHandler(contentString -> {
-										 JSONObject root = new JSONObject(contentString);
-										 JSONArray users = root.getJSONArray("users");
-										 for (int userIndex = 0; userIndex < users.length(); userIndex++) {
-											 JSONObject user = users.getJSONObject(userIndex);
-											 FahUser fahUser = new FahUser(user.getString("name"));
-											 fahUser.setJid(user.getString("jid"));
-
-											 JSONObject authmethods = user.getJSONObject("authmethods");
-											 if (authmethods != null) {
-												 for (String key : authmethods.keySet()) {
-													 JSONObject authmethod = authmethods.getJSONObject(key);
-													 FahUser.AuthMethod fahAuthMethod = new FahUser.AuthMethod(key);
-													 fahAuthMethod.setIterations(authmethod.getInt("iterations"));
-													 fahAuthMethod.setSalt(Base64.getDecoder().decode(authmethod.getString("salt")));
-													 fahUser.getAuthMethods().put(key, fahAuthMethod);
-												 }
-											 }
-
-											 fahUsers.put(fahUser.getName(), fahUser);
-										 }
-									 })
-					);
+					HttpUtil.httpGet(httpClient, "http://" + fahSysApHostname + "/settings.json", new AsStringContentHandler(
+							contentString -> FahUserJsonProcessor.processSettingsJson(contentString, fahUsers)));
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
@@ -170,121 +182,70 @@ public class FreeAtHome {
 		}
 	}
 
-	public Collection<FahChannel> getAllChannels() {
-		return Collections.unmodifiableCollection(channelByName.values());
+	public Collection<AbstractFahChannel> getAllChannels() {
+		return project.getAllChannels();
 	}
 
 	public Collection<FahFloor> getAllFloors() {
-		return Collections.unmodifiableCollection(floorByUid.values());
+		return project.getAllFloors();
 	}
 
 	public FahBlind getBlind(String name) {
-		FahChannel channel = getChannel(name);
-		return channel != null && channel.isBlind() ? channel.asBlind() : null;
+		return getChannel(name, FahBlind.class);
 	}
 
-	public FahChannel getChannel(String name) {
-		return name != null ? channelByName.get(name) : null;
+	public AbstractFahChannel getChannel(String name) {
+		return project.getChannel(name);
 	}
 
-	public FahDevice getDeviceBySerialNumber(String serialNumber) {
-		return serialNumber != null ? deviceBySerialNumber.get(serialNumber) : null;
+	public <T extends AbstractFahChannel> T getChannel(String name, Class<T> type) {
+		AbstractFahChannel channel = project.getChannel(name);
+		return type.isInstance(channel) ? (T) channel : null;
 	}
 
 	public FahDimmer getDimmer(String name) {
-		FahChannel channel = getChannel(name);
-		return channel != null && channel.isDimmer() ? channel.asDimmer() : null;
-	}
-
-	public FahFloor getFloorByName(String name) {
-		return name != null ? floorByName.get(name) : null;
-	}
-
-	public FahFunction getFunctionByFunctionId(Integer functionId) {
-		return functionId != null ? functionByFunctionId.get(functionId) : null;
-	}
-
-	public FahRoom getRoomByUid(String uid) {
-		return uid != null ? roomByUid.get(uid) : null;
+		return getChannel(name, FahDimmer.class);
 	}
 
 	public FahScene getScene(String name) {
-		FahChannel channel = getChannel(name);
-		return channel != null && channel.isScene() ? channel.asScene() : null;
-	}
-
-	public FahString getStringByNameId(Integer nameId) {
-		return nameId != null ? stringByNameId.get(nameId) : null;
+		return getChannel(name, FahScene.class);
 	}
 
 	public FahSwitch getSwitch(String name) {
-		FahChannel channel = getChannel(name);
-		return channel != null && channel.isSwitch() ? channel.asSwitch() : null;
+		return getChannel(name, FahSwitch.class);
 	}
 
-	void addPart(AbstractFahPart part) {
-		if (parts.contains(part)) {
-			return;
-		}
-		part.setFreeAtHome(this);
+	public void registerChannelFactoryForFidName(String fidName, FahChannelFactory channelFactory) {
+		channelFactoriesByFidName.put(fidName, channelFactory);
+	}
 
-		if (part instanceof FahString) {
-			FahString fah = (FahString) part;
-			stringByNameId.put(fah.getId(), fah);
-		}
-		if (part instanceof FahFunction) {
-			FahFunction fah = (FahFunction) part;
-			functionByFunctionId.put(fah.getFunctionId(), fah);
-		}
-		if (part instanceof FahFloor) {
-			FahFloor fah = (FahFloor) part;
-			floorByUid.put(fah.getUid(), fah);
-			String name = fah.getName();
-			if (name != null) {
-				floorByName.put(name, fah);
-			}
-		}
-		if (part instanceof FahRoom) {
-			FahRoom fah = (FahRoom) part;
-			roomByUid.put(fah.getUid(), fah);
-		}
-		if (part instanceof FahDevice) {
-			FahDevice fah = (FahDevice) part;
-			deviceBySerialNumber.put(fah.getSerialNumber(), fah);
-		}
-		if (part instanceof FahChannel) {
-			FahChannel fah = (FahChannel) part;
-			String name = fah.getName();
-			if (name != null) {
-				channelByName.put(name, fah);
-			}
-		}
+	public void registerChannelFactoryForFunctionId(int functionId, FahChannelFactory channelFactory) {
+		channelFactoriesByFunctionId.put(functionId, channelFactory);
 	}
 
 	void loadAll() {
-		Value result = rpcCall("RemoteInterface.getAll", Value.of("de"), Value.of(4), Value.of(0), Value.of(0));
+		Value result = communication.rpcCall("RemoteInterface.getAll", Value.of("de"), Value.of(4), Value.of(0), Value.of(0));
 		String projectXml = result.getAsString();
 		if (projectXml != null) {
-			FahXmlProcessor.processProjectXml(projectXml, this);
+			FahProject project = new FahProject(communication);
+			FahXmlProcessor.processProjectXml(projectXml, project, channelFactory);
+			this.project = project;
 		}
 	}
 
-	Value rpcCall(String methodName, Value... parameters) {
-		try {
-			RpcManager rpcManager = xmppClient.getManager(RpcManager.class);
-			AsyncResult<Value> asyncResult = rpcManager.call(rpcJid, methodName, parameters);
-			return asyncResult.getResult();
-		} catch (XmppException e) {
-			throw new RuntimeException(e);
+	private FahChannelFactory getChannelFactory(FahFunction function) {
+		if (function == null) {
+			return null;
 		}
-	}
-
-	void setFahConfigValue(String name, String value) {
-		config.put(name, value);
-	}
-
-	void setFahSysapValue(String name, String value) {
-		sysap.put(name, value);
+		FahChannelFactory channelFactoryByFidName = channelFactoriesByFidName.get(function.getFidName());
+		if (channelFactoryByFidName != null) {
+			return channelFactoryByFidName;
+		}
+		FahChannelFactory channelFactoryByFunctionId = channelFactoriesByFunctionId.get(function.getFunctionId());
+		if (channelFactoryByFunctionId != null) {
+			return channelFactoryByFunctionId;
+		}
+		return null;
 	}
 
 	private void handleInboundMessage(MessageEvent messageEvent) {
@@ -301,7 +262,7 @@ public class FreeAtHome {
 							if ("update".equals(updateElement.getTagName())) {
 								String updateXml = updateElement.getElementsByTagName("data").item(0).getTextContent();
 								log.debug("updateXml: " + updateXml);
-								FahXmlProcessor.processUpdateXml(updateXml, this);
+								FahXmlProcessor.processUpdateXml(updateXml, project);
 								messageEvent.consume();
 							}
 						}
@@ -325,7 +286,7 @@ public class FreeAtHome {
 	}
 
 	private void initCryptContext(FahUser user, String fahPassword) {
-		cryptContext = new FahCryptContext(this);
+		cryptContext = new FahCryptContext(communication);
 		cryptContext.init(user, fahPassword.toCharArray());
 	}
 
