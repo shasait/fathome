@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.xml.update;
+package de.hasait.fathome.comm.xml.project;
 
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlValue;
 
 /**
  *
  */
-public class UxKeyValue {
+public class PxRoom {
 
 	@XmlAttribute
-	public String name;
+	public String uid;
 	@XmlAttribute
-	public String state;
-	@XmlValue
-	public String value;
+	public String name;
 
 }

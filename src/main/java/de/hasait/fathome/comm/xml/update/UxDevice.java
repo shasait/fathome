@@ -14,23 +14,27 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.xml.project;
+package de.hasait.fathome.comm.xml.update;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
 
 /**
  *
  */
-public class PxDataPoint {
+public class UxDevice {
 
 	@XmlAttribute
-	public String i;
+	public String serialNumber;
+	@XmlAttribute
+	public String state;
 
-	@XmlElement(name = "value")
-	public List<String> values = new ArrayList<>();
+	@XmlElementWrapper(name = "channels")
+	@XmlElement(name = "channel")
+	public List<UxChannel> channels = new ArrayList<>();
 
 }

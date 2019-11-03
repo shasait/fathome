@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.xml.project;
+package de.hasait.fathome.comm.xml.project;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlValue;
+import javax.xml.bind.annotation.XmlElement;
 
 /**
  *
  */
-public class PxKeyValue {
+public class PxDataPoint {
 
 	@XmlAttribute
-	public String name;
-	@XmlValue
-	public String value;
+	public String i;
+
+	@XmlElement(name = "value")
+	public List<String> values = new ArrayList<>();
 
 }

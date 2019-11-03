@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.xml.project;
+package de.hasait.fathome.comm.xml.update;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,24 +22,27 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  *
  */
-public class PxDevice {
+@XmlRootElement(name = "project")
+public class UxProject {
 
 	@XmlAttribute
-	public String serialNumber;
+	public String mrhaVersion;
 	@XmlAttribute
-	public String nameId;
+	public String mrhaBuild;
 	@XmlAttribute
-	public String functionId;
+	public String type;
 
-	@XmlElement(name = "attribute")
-	public List<PxKeyValue> attributes = new ArrayList<>();
+	@XmlElementWrapper(name = "sysap")
+	@XmlElement(name = "value")
+	public List<UxKeyValue> sysapValues = new ArrayList<>();
 
-	@XmlElementWrapper(name = "channels")
-	@XmlElement(name = "channel")
-	public List<PxChannel> channels = new ArrayList<>();
+	@XmlElementWrapper(name = "devices")
+	@XmlElement(name = "device")
+	public List<UxDevice> devices = new ArrayList<>();
 
 }

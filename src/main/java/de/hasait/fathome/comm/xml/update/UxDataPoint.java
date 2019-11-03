@@ -14,35 +14,25 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.xml.update;
+package de.hasait.fathome.comm.xml.update;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  *
  */
-@XmlRootElement(name = "project")
-public class UxProject {
+public class UxDataPoint {
 
 	@XmlAttribute
-	public String mrhaVersion;
+	public String i;
 	@XmlAttribute
-	public String mrhaBuild;
-	@XmlAttribute
-	public String type;
+	public String state;
 
-	@XmlElementWrapper(name = "sysap")
 	@XmlElement(name = "value")
-	public List<UxKeyValue> sysapValues = new ArrayList<>();
-
-	@XmlElementWrapper(name = "devices")
-	@XmlElement(name = "device")
-	public List<UxDevice> devices = new ArrayList<>();
+	public List<String> values = new ArrayList<>();
 
 }

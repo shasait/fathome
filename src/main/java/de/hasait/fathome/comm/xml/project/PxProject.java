@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.xml.project;
+package de.hasait.fathome.comm.xml.project;
 
 import java.util.ArrayList;
 import java.util.List;

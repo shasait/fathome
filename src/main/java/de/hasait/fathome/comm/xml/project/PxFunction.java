@@ -14,34 +14,20 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.xml.project;
-
-import java.util.ArrayList;
-import java.util.List;
+package de.hasait.fathome.comm.xml.project;
 
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 
 /**
  *
  */
-public class PxChannel {
+public class PxFunction {
 
 	@XmlAttribute
-	public String i;
+	public String nameId;
 	@XmlAttribute
-	public String cid;
-
-	@XmlElement(name = "attribute")
-	public List<PxKeyValue> attributes = new ArrayList<>();
-
-	@XmlElementWrapper(name = "inputs")
-	@XmlElement(name = "dataPoint")
-	public List<PxDataPoint> inputs = new ArrayList<>();
-
-	@XmlElementWrapper(name = "outputs")
-	@XmlElement(name = "dataPoint")
-	public List<PxDataPoint> outputs = new ArrayList<>();
+	public String functionId;
+	@XmlAttribute
+	public String name;
 
 }

@@ -14,29 +14,31 @@
  * limitations under the License.
  */
 
-package de.hasait.fathome.xml.project;
+package de.hasait.fathome.comm.xml.update;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
 
 /**
  *
  */
-public class PxFloor {
+public class UxChannel {
 
 	@XmlAttribute
-	public String uid;
+	public String i;
 	@XmlAttribute
-	public String name;
-	@XmlAttribute
-	public String type;
-	@XmlAttribute
-	public int level;
+	public String state;
 
-	@XmlElement(name = "room")
-	public List<PxRoom> rooms = new ArrayList<>();
+	@XmlElementWrapper(name = "inputs")
+	@XmlElement(name = "dataPoint")
+	public List<UxDataPoint> inputs = new ArrayList<>();
+
+	@XmlElementWrapper(name = "outputs")
+	@XmlElement(name = "dataPoint")
+	public List<UxDataPoint> outputs = new ArrayList<>();
 
 }

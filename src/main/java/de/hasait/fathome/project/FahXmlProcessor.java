@@ -22,9 +22,9 @@ import java.util.stream.Stream;
 
 import javax.xml.bind.JAXB;
 
-import de.hasait.fathome.xml.project.PxKeyValue;
-import de.hasait.fathome.xml.project.PxProject;
-import de.hasait.fathome.xml.update.UxProject;
+import de.hasait.fathome.comm.xml.project.PxKeyValue;
+import de.hasait.fathome.comm.xml.project.PxProject;
+import de.hasait.fathome.comm.xml.update.UxProject;
 
 /**
  *
