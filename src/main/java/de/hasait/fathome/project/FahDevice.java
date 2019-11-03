@@ -16,6 +16,8 @@
 
 package de.hasait.fathome.project;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -37,6 +39,10 @@ public class FahDevice extends AbstractFahPart {
 		super();
 
 		this.serialNumber = serialNumber;
+	}
+
+	public Collection<AbstractFahChannel> getAllChannels() {
+		return Collections.unmodifiableCollection(channelsById.values());
 	}
 
 	public AbstractFahChannel getChannel(String channelId) {
