@@ -54,6 +54,7 @@ import de.hasait.fathome.comm.FahUser;
 import de.hasait.fathome.comm.FahUserJsonProcessor;
 import de.hasait.fathome.project.AbstractFahChannel;
 import de.hasait.fathome.project.FahChannelFactory;
+import de.hasait.fathome.project.FahDevice;
 import de.hasait.fathome.project.FahFloor;
 import de.hasait.fathome.project.FahFunction;
 import de.hasait.fathome.project.FahProject;
@@ -201,6 +202,10 @@ public class FreeAtHome {
 	public <T extends AbstractFahChannel> T getChannel(String name, Class<T> type) {
 		AbstractFahChannel channel = project.getChannel(name);
 		return type.isInstance(channel) ? (T) channel : null;
+	}
+
+	public FahDevice getDevice(String serialNumber) {
+		return project.getDeviceBySerialNumber(serialNumber);
 	}
 
 	public FahDimmer getDimmer(String name) {
