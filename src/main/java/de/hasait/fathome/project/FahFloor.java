@@ -25,7 +25,7 @@ import java.util.Set;
  */
 public class FahFloor extends AbstractFahPart {
 
-	private final String uid;
+	private final int id;
 
 	private final Set<FahRoom> rooms = new HashSet<>();
 
@@ -33,10 +33,10 @@ public class FahFloor extends AbstractFahPart {
 
 	private int level;
 
-	FahFloor(String uid) {
+	FahFloor(int id) {
 		super();
 
-		this.uid = uid;
+		this.id = id;
 	}
 
 	public int getLevel() {
@@ -51,8 +51,8 @@ public class FahFloor extends AbstractFahPart {
 		return Collections.unmodifiableSet(rooms);
 	}
 
-	public String getUid() {
-		return uid;
+	public int getId() {
+		return id;
 	}
 
 	void addRoom(FahRoom room) {

@@ -26,17 +26,17 @@ import java.util.Set;
 public class FahRoom extends AbstractFahPart {
 
 	private final FahFloor floor;
-	private final String uid;
+	private final int id;
 
 	private final Set<FahDevice> devices = new HashSet<>();
 
 	private String name;
 
-	FahRoom(FahFloor floor, String uid) {
+	FahRoom(FahFloor floor, int id) {
 		super();
 
 		this.floor = floor;
-		this.uid = uid;
+		this.id = id;
 
 		floor.addRoom(this);
 	}
@@ -53,8 +53,8 @@ public class FahRoom extends AbstractFahPart {
 		return name;
 	}
 
-	public String getUid() {
-		return uid;
+	public int getId() {
+		return id;
 	}
 
 	void addDevice(FahDevice device) {

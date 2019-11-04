@@ -95,7 +95,7 @@ public abstract class AbstractFahChannel extends AbstractFahPart {
 
 	private void assertFunction(boolean assertion, String type) {
 		if (!assertion) {
-			throw new RuntimeException("Not a " + type + ": " + name + " (" + function.getFidName() + "/" + function.getFunctionId() + ")");
+			throw new RuntimeException("Not a " + type + ": " + name + " (" + function.getFidName() + "/" + function.getId() + ")");
 		}
 	}
 

@@ -43,15 +43,15 @@ public class FahXmlProcessor {
 		xProject.fahDefinitions.functions.forEach(xFunction -> {
 			FahFunction fahFunction = new FahFunction(parseId(xFunction.functionId));
 			fahFunction.setFidName(xFunction.name);
-			fahFunction.setName(fahProject.getStringByNameId(parseId(xFunction.nameId)));
+			fahFunction.setName(fahProject.getStringById(parseId(xFunction.nameId)));
 			fahProject.addPart(fahFunction);
 		});
 		xProject.floors.forEach(xFloor -> {
-			FahFloor fahFloor = new FahFloor(xFloor.uid);
+			FahFloor fahFloor = new FahFloor(parseId(xFloor.uid));
 			fahFloor.setName(xFloor.name);
 			fahFloor.setLevel(xFloor.level);
 			xFloor.rooms.forEach(xRoom -> {
-				FahRoom fahRoom = new FahRoom(fahFloor, xRoom.uid);
+				FahRoom fahRoom = new FahRoom(fahFloor, parseId(xRoom.uid));
 				fahRoom.setName(xRoom.name);
 				fahProject.addPart(fahRoom);
 			});
@@ -59,14 +59,14 @@ public class FahXmlProcessor {
 		});
 		xProject.devices.forEach(xDevice -> {
 			FahDevice fahDevice = new FahDevice(xDevice.serialNumber);
-			fahDevice.setType(fahProject.getStringByNameId(parseId(xDevice.nameId)));
-			fahDevice.setFunction(fahProject.getFunctionByFunctionId(parseId(xDevice.functionId)));
+			fahDevice.setType(fahProject.getStringById(parseId(xDevice.nameId)));
+			fahDevice.setFunction(fahProject.getFunctionById(parseId(xDevice.functionId)));
 			fahDevice.setName(findKV(xDevice.attributes, "displayName"));
-			String roomUid = findKV(xDevice.attributes, "room");
-			fahDevice.setRoom(fahProject.getRoomByUid(roomUid));
+			Integer roomUid = parseId(findKV(xDevice.attributes, "room"));
+			fahDevice.setRoom(fahProject.getRoomById(roomUid));
 			xDevice.channels.forEach(xChannel -> {
 				Integer functionId = parseId(findKV(xChannel.attributes, "functionId"));
-				FahFunction function = fahProject.getFunctionByFunctionId(functionId);
+				FahFunction function = fahProject.getFunctionById(functionId);
 				AbstractFahChannel fahChannel = channelFactory.createChannel(fahDevice, xChannel.i, function);
 				fahChannel.setName(findKV(xChannel.attributes, "displayName"));
 				Stream.concat(xChannel.inputs.stream(), xChannel.outputs.stream()).forEach(pxDataPoint -> {

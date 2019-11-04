@@ -35,11 +35,11 @@ public class FahProject {
 	private final Set<AbstractFahPart> parts = new HashSet<>();
 	private final Map<String, String> sysap = new TreeMap<>();
 	private final Map<String, String> config = new TreeMap<>();
-	private final Map<Integer, FahString> stringByNameId = new TreeMap<>();
-	private final Map<Integer, FahFunction> functionByFunctionId = new TreeMap<>();
-	private final Map<String, FahFloor> floorByUid = new TreeMap<>();
+	private final Map<Integer, FahString> stringById = new TreeMap<>();
+	private final Map<Integer, FahFunction> functionById = new TreeMap<>();
+	private final Map<Integer, FahFloor> floorById = new TreeMap<>();
 	private final Map<String, FahFloor> floorByName = new TreeMap<>();
-	private final Map<String, FahRoom> roomByUid = new TreeMap<>();
+	private final Map<Integer, FahRoom> roomById = new TreeMap<>();
 	private final Map<String, FahDevice> deviceBySerialNumber = new TreeMap<>();
 	private final Map<String, AbstractFahChannel> channelByName = new TreeMap<>();
 
@@ -54,7 +54,7 @@ public class FahProject {
 	}
 
 	public Collection<FahFloor> getAllFloors() {
-		return Collections.unmodifiableCollection(floorByUid.values());
+		return Collections.unmodifiableCollection(floorById.values());
 	}
 
 	public AbstractFahChannel getChannel(String name) {
@@ -81,15 +81,15 @@ public class FahProject {
 
 		if (part instanceof FahString) {
 			FahString fah = (FahString) part;
-			stringByNameId.put(fah.getId(), fah);
+			stringById.put(fah.getId(), fah);
 		}
 		if (part instanceof FahFunction) {
 			FahFunction fah = (FahFunction) part;
-			functionByFunctionId.put(fah.getFunctionId(), fah);
+			functionById.put(fah.getId(), fah);
 		}
 		if (part instanceof FahFloor) {
 			FahFloor fah = (FahFloor) part;
-			floorByUid.put(fah.getUid(), fah);
+			floorById.put(fah.getId(), fah);
 			String name = fah.getName();
 			if (name != null) {
 				floorByName.put(name, fah);
@@ -97,7 +97,7 @@ public class FahProject {
 		}
 		if (part instanceof FahRoom) {
 			FahRoom fah = (FahRoom) part;
-			roomByUid.put(fah.getUid(), fah);
+			roomById.put(fah.getId(), fah);
 		}
 		if (part instanceof FahDevice) {
 			FahDevice fah = (FahDevice) part;
@@ -112,16 +112,16 @@ public class FahProject {
 		}
 	}
 
-	FahFunction getFunctionByFunctionId(Integer functionId) {
-		return functionId != null ? functionByFunctionId.get(functionId) : null;
+	FahFunction getFunctionById(Integer id) {
+		return id != null ? functionById.get(id) : null;
 	}
 
-	FahRoom getRoomByUid(String uid) {
-		return uid != null ? roomByUid.get(uid) : null;
+	FahRoom getRoomById(Integer id) {
+		return id != null ? roomById.get(id) : null;
 	}
 
-	FahString getStringByNameId(Integer nameId) {
-		return nameId != null ? stringByNameId.get(nameId) : null;
+	FahString getStringById(Integer id) {
+		return id != null ? stringById.get(id) : null;
 	}
 
 	void setFahConfigValue(String name, String value) {

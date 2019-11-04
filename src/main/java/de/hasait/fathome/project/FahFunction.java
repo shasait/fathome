@@ -21,23 +21,23 @@ package de.hasait.fathome.project;
  */
 public class FahFunction extends AbstractFahPart {
 
-	private final int functionId;
+	private final int id;
 
 	private FahString name;
 	private String fidName;
 
-	FahFunction(int functionId) {
+	FahFunction(int id) {
 		super();
 
-		this.functionId = functionId;
+		this.id = id;
 	}
 
 	public String getFidName() {
 		return fidName;
 	}
 
-	public int getFunctionId() {
-		return functionId;
+	public int getId() {
+		return id;
 	}
 
 	public FahString getName() {

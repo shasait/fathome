@@ -246,7 +246,7 @@ public class FreeAtHome {
 		if (channelFactoryByFidName != null) {
 			return channelFactoryByFidName;
 		}
-		FahChannelFactory channelFactoryByFunctionId = channelFactoriesByFunctionId.get(function.getFunctionId());
+		FahChannelFactory channelFactoryByFunctionId = channelFactoriesByFunctionId.get(function.getId());
 		if (channelFactoryByFunctionId != null) {
 			return channelFactoryByFunctionId;
 		}
