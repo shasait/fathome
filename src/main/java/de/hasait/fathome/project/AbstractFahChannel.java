@@ -68,10 +68,6 @@ public abstract class AbstractFahChannel extends AbstractFahPart {
 		}
 	}
 
-	final void setName(String name) {
-		this.name = name;
-	}
-
 	protected Set<String> getDataPointIds() {
 		return Collections.unmodifiableSet(dataPointValues.keySet());
 	}
@@ -93,10 +89,8 @@ public abstract class AbstractFahChannel extends AbstractFahPart {
 		setDataPoint(dataPointId, value);
 	}
 
-	private void assertFunction(boolean assertion, String type) {
-		if (!assertion) {
-			throw new RuntimeException("Not a " + type + ": " + name + " (" + function.getFidName() + "/" + function.getId() + ")");
-		}
+	protected void setName(String name) {
+		this.name = name;
 	}
 
 }

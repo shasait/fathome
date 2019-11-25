@@ -16,36 +16,18 @@
 
 package de.hasait.fathome.comm.xml.project;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 
 /**
  *
  */
-public class PxDevice {
+public class PxOption {
 
 	@XmlAttribute
-	public String serialNumber;
-	@XmlAttribute
-	public String deviceId;
+	public String key;
 	@XmlAttribute
 	public String nameId;
 	@XmlAttribute
-	public String functionId;
-
-	@XmlElement(name = "attribute")
-	public List<PxKeyValue> attributes = new ArrayList<>();
-
-	@XmlElementWrapper(name = "channels")
-	@XmlElement(name = "channel")
-	public List<PxChannel> channels = new ArrayList<>();
-
-	@XmlElementWrapper(name = "parameters")
-	@XmlElement(name = "parameter")
-	public List<PxParameter> parameters = new ArrayList<>();
+	public String mask;
 
 }

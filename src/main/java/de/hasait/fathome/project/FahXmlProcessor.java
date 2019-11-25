@@ -22,16 +22,23 @@ import java.util.stream.Stream;
 
 import javax.xml.bind.JAXB;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.hasait.fathome.comm.xml.project.PxKeyValue;
 import de.hasait.fathome.comm.xml.project.PxProject;
 import de.hasait.fathome.comm.xml.update.UxProject;
+import de.hasait.fathome.things.FahSensor;
 
 /**
  *
  */
 public class FahXmlProcessor {
 
-	public static void processProjectXml(String xml, FahProject fahProject, FahChannelFactory channelFactory) {
+	private static final Logger log = LoggerFactory.getLogger(FahXmlProcessor.class);
+
+	public static void processProjectXml(String xml, FahProject fahProject, FahChannelFactory channelFactory,
+			FahDeviceProcessor deviceProcessor) {
 		PxProject xProject = JAXB.unmarshal(new StringReader(xml), PxProject.class);
 		xProject.sysapValues.forEach(xSysapValue -> fahProject.setFahSysapValue(xSysapValue.name, xSysapValue.value));
 		xProject.configValues.forEach(xConfigValue -> fahProject.setFahConfigValue(xConfigValue.name, xConfigValue.value));
@@ -59,6 +66,7 @@ public class FahXmlProcessor {
 		});
 		xProject.devices.forEach(xDevice -> {
 			FahDevice fahDevice = new FahDevice(xDevice.serialNumber);
+			fahDevice.setDeviceId(xDevice.deviceId);
 			fahDevice.setType(fahProject.getStringById(parseId(xDevice.nameId)));
 			fahDevice.setFunction(fahProject.getFunctionById(parseId(xDevice.functionId)));
 			fahDevice.setName(findKV(xDevice.attributes, "displayName"));
@@ -75,11 +83,17 @@ public class FahXmlProcessor {
 				});
 				fahProject.addPart(fahChannel);
 			});
+			xDevice.parameters.forEach(xParameter -> {
+				fahDevice.setParameter(xParameter.i, xParameter.value);
+			});
 			fahProject.addPart(fahDevice);
+			deviceProcessor.processDevice(fahDevice);
 		});
 	}
 
 	public static void processUpdateXml(String xml, FahProject fahProject) {
+		log.info("Update-XML: " + xml);
+
 		UxProject xProject = JAXB.unmarshal(new StringReader(xml), UxProject.class);
 		xProject.sysapValues.forEach(xSysapValue -> {
 			fahProject.setFahSysapValue(xSysapValue.name, xSysapValue.value);
@@ -95,6 +109,9 @@ public class FahXmlProcessor {
 							fahChannel.setDataPoint(xDataPoint.i, value);
 						});
 					}
+				});
+				xDevice.parameters.forEach(xParameter -> {
+					fahDevice.setParameter(xParameter.i, xParameter.value);
 				});
 			}
 		});

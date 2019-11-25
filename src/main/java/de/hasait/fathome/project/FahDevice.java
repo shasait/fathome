@@ -19,18 +19,27 @@ package de.hasait.fathome.project;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class FahDevice extends AbstractFahPart {
 
+	private static final Logger log = LoggerFactory.getLogger(FahDevice.class);
+
 	private final String serialNumber;
 
 	private final Map<String, AbstractFahChannel> channelsById = new TreeMap<>();
-
+	private final Map<String, String> parameterValues = new ConcurrentHashMap<>();
 	private FahString type;
+	private String deviceId;
 	private FahFunction function;
 	private String name;
 	private FahRoom room;
@@ -49,12 +58,24 @@ public class FahDevice extends AbstractFahPart {
 		return channelsById.get(channelId);
 	}
 
+	public String getDeviceId() {
+		return deviceId;
+	}
+
 	public FahFunction getFunction() {
 		return function;
 	}
 
 	public String getName() {
 		return name;
+	}
+
+	public Set<String> getParameterIds() {
+		return Collections.unmodifiableSet(parameterValues.keySet());
+	}
+
+	public String getParameterValue(String parameterId) {
+		return parameterValues.get(parameterId);
 	}
 
 	public FahRoom getRoom() {
@@ -73,12 +94,23 @@ public class FahDevice extends AbstractFahPart {
 		channelsById.put(channel.getId(), channel);
 	}
 
+	void setDeviceId(String deviceId) {
+		this.deviceId = deviceId;
+	}
+
 	void setFunction(FahFunction function) {
 		this.function = function;
 	}
 
 	void setName(String name) {
 		this.name = name;
+	}
+
+	final void setParameter(String parameterId, String value) {
+		String oldValue = value != null ? parameterValues.put(parameterId, value) : parameterValues.remove(parameterId);
+		if (!Objects.equals(oldValue, value)) {
+			log.info(name + "@" + parameterId + " changed: " + oldValue + " -> " + value);
+		}
 	}
 
 	void setRoom(FahRoom newRoom) {

@@ -37,4 +37,8 @@ public class UxDevice {
 	@XmlElement(name = "channel")
 	public List<UxChannel> channels = new ArrayList<>();
 
+	@XmlElementWrapper(name = "parameters")
+	@XmlElement(name = "parameter")
+	public List<UxParameter> parameters = new ArrayList<>();
+
 }

@@ -26,26 +26,18 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 /**
  *
  */
-public class PxDevice {
+public class PxParameter {
 
 	@XmlAttribute
-	public String serialNumber;
-	@XmlAttribute
-	public String deviceId;
+	public String i;
 	@XmlAttribute
 	public String nameId;
-	@XmlAttribute
-	public String functionId;
 
-	@XmlElement(name = "attribute")
-	public List<PxKeyValue> attributes = new ArrayList<>();
+	@XmlElement(name = "value")
+	public String value;
 
-	@XmlElementWrapper(name = "channels")
-	@XmlElement(name = "channel")
-	public List<PxChannel> channels = new ArrayList<>();
-
-	@XmlElementWrapper(name = "parameters")
-	@XmlElement(name = "parameter")
-	public List<PxParameter> parameters = new ArrayList<>();
+	@XmlElementWrapper(name = "valueEnum")
+	@XmlElement(name = "option")
+	public List<PxOption> valueEnum = new ArrayList<>();
 
 }

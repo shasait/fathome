@@ -19,24 +19,9 @@ package de.hasait.fathome.project;
 /**
  *
  */
-public abstract class AbstractFahPart {
+@FunctionalInterface
+public interface FahDeviceProcessor {
 
-	private FahProject project;
-
-	protected AbstractFahPart() {
-		super();
-	}
-
-	public FahProject getProject() {
-		return project;
-	}
-
-	void setProject(FahProject project) {
-		if (this.project == project) {
-			return;
-		}
-		this.project = project;
-		this.project.addPart(this);
-	}
+	void processDevice(FahDevice device);
 
 }

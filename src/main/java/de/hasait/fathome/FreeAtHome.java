@@ -17,8 +17,10 @@
 package de.hasait.fathome;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -55,6 +57,7 @@ import de.hasait.fathome.comm.FahUserJsonProcessor;
 import de.hasait.fathome.project.AbstractFahChannel;
 import de.hasait.fathome.project.FahChannelFactory;
 import de.hasait.fathome.project.FahDevice;
+import de.hasait.fathome.project.FahDeviceProcessor;
 import de.hasait.fathome.project.FahFloor;
 import de.hasait.fathome.project.FahFunction;
 import de.hasait.fathome.project.FahProject;
@@ -62,6 +65,7 @@ import de.hasait.fathome.project.FahXmlProcessor;
 import de.hasait.fathome.things.FahBlind;
 import de.hasait.fathome.things.FahDimmer;
 import de.hasait.fathome.things.FahScene;
+import de.hasait.fathome.things.FahSensor;
 import de.hasait.fathome.things.FahSwitch;
 import de.hasait.fathome.things.FahUnknown;
 import de.hasait.fathome.util.http.AsStringContentHandler;
@@ -76,6 +80,7 @@ public class FreeAtHome {
 
 	private final Map<String, FahChannelFactory> channelFactoriesByFidName = new HashMap<>();
 	private final Map<Integer, FahChannelFactory> channelFactoriesByFunctionId = new HashMap<>();
+	private final List<FahDeviceProcessor> deviceProcessors = new ArrayList<>();
 
 	private final FahCommunication communication = new FahCommunication() {
 		@Override
@@ -113,6 +118,7 @@ public class FreeAtHome {
 		registerChannelFactoryForFidName("FID_BlindActuator", FahBlind::new);
 		registerChannelFactoryForFidName("FID_ShutterActuator", FahBlind::new);
 		registerChannelFactoryForFunctionId(0x4800, FahScene::new);
+		registerDeviceProcessor(FahSensor::processDeviceForSensors);
 	}
 
 	public void connect(FreeAtHomeConfiguration configuration) {
@@ -228,12 +234,18 @@ public class FreeAtHome {
 		channelFactoriesByFunctionId.put(functionId, channelFactory);
 	}
 
+	public void registerDeviceProcessor(FahDeviceProcessor deviceProcessor) {
+		deviceProcessors.add(deviceProcessor);
+	}
+
 	void loadAll() {
 		Value result = communication.rpcCall("RemoteInterface.getAll", Value.of("de"), Value.of(4), Value.of(0), Value.of(0));
 		String projectXml = result.getAsString();
 		if (projectXml != null) {
 			FahProject project = new FahProject(communication);
-			FahXmlProcessor.processProjectXml(projectXml, project, channelFactory);
+			FahXmlProcessor.processProjectXml(projectXml, project, channelFactory,
+											  device -> deviceProcessors.forEach(deviceProcessor -> deviceProcessor.processDevice(device))
+			);
 			this.project = project;
 		}
 	}

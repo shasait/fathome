@@ -49,31 +49,7 @@ public class FahProject {
 		this.communication = communication;
 	}
 
-	public Collection<AbstractFahChannel> getAllChannels() {
-		return Collections.unmodifiableCollection(channelByName.values());
-	}
-
-	public Collection<FahFloor> getAllFloors() {
-		return Collections.unmodifiableCollection(floorById.values());
-	}
-
-	public AbstractFahChannel getChannel(String name) {
-		return name != null ? channelByName.get(name) : null;
-	}
-
-	public FahCommunication getCommunication() {
-		return communication;
-	}
-
-	public FahDevice getDeviceBySerialNumber(String serialNumber) {
-		return serialNumber != null ? deviceBySerialNumber.get(serialNumber) : null;
-	}
-
-	public FahFloor getFloorByName(String name) {
-		return name != null ? floorByName.get(name) : null;
-	}
-
-	void addPart(AbstractFahPart part) {
+	public void addPart(AbstractFahPart part) {
 		if (parts.contains(part)) {
 			return;
 		}
@@ -110,6 +86,30 @@ public class FahProject {
 				channelByName.put(name, fah);
 			}
 		}
+	}
+
+	public Collection<AbstractFahChannel> getAllChannels() {
+		return Collections.unmodifiableCollection(channelByName.values());
+	}
+
+	public Collection<FahFloor> getAllFloors() {
+		return Collections.unmodifiableCollection(floorById.values());
+	}
+
+	public AbstractFahChannel getChannel(String name) {
+		return name != null ? channelByName.get(name) : null;
+	}
+
+	public FahCommunication getCommunication() {
+		return communication;
+	}
+
+	public FahDevice getDeviceBySerialNumber(String serialNumber) {
+		return serialNumber != null ? deviceBySerialNumber.get(serialNumber) : null;
+	}
+
+	public FahFloor getFloorByName(String name) {
+		return name != null ? floorByName.get(name) : null;
 	}
 
 	FahFunction getFunctionById(Integer id) {
